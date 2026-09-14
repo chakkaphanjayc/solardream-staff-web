@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { createHash } from "node:crypto";
+import { TECH_SYNC_PAYLOAD_SCHEMA_VERSION } from "@solar-dream/contracts/tech-sync";
 
 import { validateUploadContentLength } from "@/lib/fileValidation";
 import { getTechnicianTaskAccess } from "@/lib/techPortalAccess";
@@ -32,11 +34,26 @@ const syncTypeSchema = z.enum([
   "ASSET_REGISTERED",
 ]);
 
+const syncDeviceIdSchema = z.string().trim().min(8).max(160).regex(/^[A-Za-z0-9._:-]+$/);
+const syncClientCreatedAtSchema = z.string().trim().min(1).max(80).refine(
+  (value) => Number.isFinite(Date.parse(value)),
+  "A valid client timestamp is required.",
+);
+
 const syncEnvelopeSchema = z.object({
+  commandId: techIdempotencyKeySchema.optional(),
+  commandType: syncTypeSchema.optional(),
+  idempotencyKey: techIdempotencyKeySchema.optional(),
   type: syncTypeSchema,
   operationId: techIdempotencyKeySchema,
   taskId: techTaskIdSchema,
   fieldVisitId: techTaskIdSchema.nullable().optional(),
+  actorUserId: techTaskIdSchema.nullable().optional(),
+  deviceId: syncDeviceIdSchema.optional(),
+  baseVersion: z.string().trim().max(160).nullable().optional(),
+  payloadSchemaVersion: z.number().int().min(1).max(TECH_SYNC_PAYLOAD_SCHEMA_VERSION).optional(),
+  dependencyReferences: z.array(z.string().trim().min(1).max(160)).max(50).optional(),
+  clientCreatedAt: syncClientCreatedAtSchema.optional(),
   payload: z.unknown(),
 });
 
@@ -79,6 +96,70 @@ function parseEnvelope(value: unknown) {
   return parsed.data;
 }
 
+function assertIdempotencyHeader(request: NextRequest, envelope: ReturnType<typeof parseEnvelope>) {
+  const headerValue = request.headers.get("idempotency-key")?.trim();
+  if (headerValue && headerValue !== envelope.operationId) {
+    throw new TechSyncValidationError("The Idempotency-Key header does not match the sync command.");
+  }
+  if (envelope.idempotencyKey && envelope.idempotencyKey !== envelope.operationId) {
+    throw new TechSyncValidationError("The sync command contains conflicting idempotency keys.");
+  }
+  if (envelope.commandType && envelope.commandType !== envelope.type) {
+    throw new TechSyncValidationError("The sync command type does not match its operation type.");
+  }
+}
+
+function canonicalizeCommandValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalizeCommandValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => [key, canonicalizeCommandValue(item)]));
+  }
+  return value;
+}
+
+function getCommandFingerprint(envelope: ReturnType<typeof parseEnvelope>, file: File | null) {
+  const value = {
+    type: envelope.type,
+    taskId: envelope.taskId,
+    fieldVisitId: envelope.fieldVisitId || null,
+    payload: envelope.payload,
+    ...(file ? { file: { name: file.name, size: file.size, type: file.type } } : {}),
+  };
+  return createHash("sha256").update(JSON.stringify(canonicalizeCommandValue(value))).digest("hex");
+}
+
+function syncSuccessResponse(envelope: ReturnType<typeof parseEnvelope>, result: unknown) {
+  const receivedAt = new Date().toISOString();
+  const commandId = envelope.commandId || envelope.operationId;
+  return NextResponse.json(
+    {
+      success: true,
+      synced: true,
+      operationId: envelope.operationId,
+      commandId,
+      ack: {
+        commandId,
+        state: "PENDING_ERP",
+        serverAcknowledged: true,
+        erpApplied: false,
+        canonicalVersion: null,
+        receivedAt,
+        message: "The command was accepted by SolarDream. ERPNext projection remains queued.",
+      },
+      result,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Tech-Sync-Protocol": String(TECH_SYNC_PAYLOAD_SCHEMA_VERSION),
+      },
+    },
+  );
+}
+
 async function getAccess(taskId: string, statuses: readonly string[], fieldVisitId?: string | null) {
   const accessResult = await getTechnicianTaskAccess(taskId, statuses, fieldVisitId || undefined);
   if (accessResult.kind !== "OK") {
@@ -117,6 +198,8 @@ export async function POST(request: NextRequest) {
     } else {
       envelope = parseEnvelope(await request.json().catch(() => null));
     }
+    assertIdempotencyHeader(request, envelope);
+    const commandFingerprint = getCommandFingerprint(envelope, file);
 
     if (envelope.type === "ASSET_REGISTERED") {
       const fieldFeatureResponse = await requireOpsV2Feature("OPS_V2_FIELD");
@@ -141,8 +224,9 @@ export async function POST(request: NextRequest) {
         gps: parsed.data.gps,
         idempotencyKey: envelope.operationId,
         source: "PWA_OFFLINE",
+        commandFingerprint,
       });
-      return NextResponse.json({ success: true, synced: true, operationId: envelope.operationId, result }, { headers: { "Cache-Control": "no-store" } });
+      return syncSuccessResponse(envelope, result);
     }
 
     if (envelope.type === "QC_EVIDENCE_UPLOADED") {
@@ -157,8 +241,9 @@ export async function POST(request: NextRequest) {
         file,
         gps: parsed.data.gps,
         source: "PWA_OFFLINE",
+        commandFingerprint,
       });
-      return NextResponse.json({ success: true, synced: true, operationId: envelope.operationId, result }, { headers: { "Cache-Control": "no-store" } });
+      return syncSuccessResponse(envelope, result);
     }
 
     if (envelope.type === "QC_PHASE_COMPLETED") {
@@ -177,8 +262,9 @@ export async function POST(request: NextRequest) {
         evidenceIds: parsed.data.evidenceIds,
         idempotencyKey: envelope.operationId,
         source: "PWA_OFFLINE",
+        commandFingerprint,
       });
-      return NextResponse.json({ success: true, synced: true, operationId: envelope.operationId, result }, { headers: { "Cache-Control": "no-store" } });
+      return syncSuccessResponse(envelope, result);
     }
 
     if (envelope.type === "ASSET_REGISTERED") {
@@ -195,8 +281,9 @@ export async function POST(request: NextRequest) {
         ...parsed.data,
         projectId: access.project.id,
         idempotencyKey: envelope.operationId,
+        commandFingerprint,
       });
-      return NextResponse.json({ success: true, synced: true, operationId: envelope.operationId, result }, { headers: { "Cache-Control": "no-store" } });
+      return syncSuccessResponse(envelope, result);
     }
 
     const parsed = handoverSchema.safeParse({
@@ -215,8 +302,9 @@ export async function POST(request: NextRequest) {
       idempotencyKey: envelope.operationId,
       requestHeaders: request.headers,
       source: "PWA_OFFLINE",
+      commandFingerprint,
     });
-    return NextResponse.json({ success: true, synced: true, operationId: envelope.operationId, result }, { headers: { "Cache-Control": "no-store" } });
+    return syncSuccessResponse(envelope, result);
   } catch (error: unknown) {
     const status = error && typeof error === "object" && typeof (error as { status?: unknown }).status === "number"
       ? (error as { status: number }).status

@@ -11,6 +11,10 @@ export const TECH_SYNC_STATES = [
   "RETRY_AVAILABLE",
 ] as const;
 
+// Increment when the shape of a queued command changes. IndexedDB migrations
+// must remain backward-compatible with commands written by older Staff builds.
+export const TECH_SYNC_PAYLOAD_SCHEMA_VERSION = 1;
+
 export type TechSyncState = (typeof TECH_SYNC_STATES)[number];
 
 export const TECH_COMMAND_TYPES = [
@@ -51,7 +55,16 @@ export type TechCommandAck = {
   message: string | null;
 };
 
-export type TechSyncResponse = {
+export type TechSyncAcceptanceResponse = {
+  success: true;
+  synced: true;
+  operationId: string;
+  commandId: string;
+  ack: TechCommandAck;
+  result: JsonValue | null;
+};
+
+export type TechSyncResponse = TechSyncAcceptanceResponse | {
   success: boolean;
   results: readonly TechCommandAck[];
   retryAfterSeconds?: number;

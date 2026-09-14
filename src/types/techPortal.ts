@@ -349,6 +349,7 @@ export type TechDashboardResponse = {
   success: true;
   date: string;
   cacheScope: string;
+  actorUserId?: string;
   readOnly: boolean;
   tasks: TechDashboardTask[];
 };

@@ -835,7 +835,17 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
   const [busyAction, setBusyAction] = useState<"start" | "evidence" | "qc" | "handover" | null>(null);
   const [busyPhase, setBusyPhase] = useState<TechPortalPhaseCode | null>(null);
   const [handoverNotes, setHandoverNotes] = useState("");
-  const [syncSummary, setSyncSummary] = useState<TechOfflineSummary>({ pending: 0, syncing: 0, failed: 0, conflicts: 0 });
+  const [syncSummary, setSyncSummary] = useState<TechOfflineSummary>({
+    pending: 0,
+    pendingAuth: 0,
+    syncing: 0,
+    failed: 0,
+    retryAvailable: 0,
+    conflicts: 0,
+    rejected: 0,
+    pendingServer: 0,
+    pendingErp: 0,
+  });
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingHandoverByTask, setPendingHandoverByTask] = useState<Record<string, boolean>>({});
   const signatureRef = useRef<SignatureCanvas | null>(null);
@@ -946,12 +956,12 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
     setSyncSummary(await getTechOfflineSummary());
   }, []);
 
-  const syncNow = useCallback(async () => {
+  const syncNow = useCallback(async (options: { forceRetry?: boolean } = {}) => {
     if (!isOnline || syncInFlightRef.current || isReadOnly) return;
     syncInFlightRef.current = true;
     setIsSyncing(true);
     try {
-      const result = await syncTechOutbox();
+      const result = await syncTechOutbox(options);
       await refreshSyncSummary();
       if (result.authRequired) {
         setNotice({ tone: "error", message: copy.accessRequiredHint });
@@ -971,7 +981,7 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
     await loadDashboard();
     await retryTechConflicts();
     await refreshSyncSummary();
-    await syncNow();
+    await syncNow({ forceRetry: true });
   }, [isOnline, isReadOnly, loadDashboard, refreshSyncSummary, syncNow]);
 
   useEffect(() => {
@@ -989,13 +999,24 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
   }, [refreshSyncSummary]);
 
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
     const onMessage = (event: MessageEvent<unknown>) => {
       if (isRecord(event.data) && event.data.type === "TECH_PORTAL_SYNC_REQUEST") void syncNow();
     };
-    navigator.serviceWorker.addEventListener("message", onMessage);
-    void navigator.serviceWorker.register("/tech-portal-sw.js", { updateViaCache: "none" }).then(() => void syncNow()).catch(() => undefined);
-    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+    const onOnline = () => void syncNow();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void syncNow();
+    };
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", onMessage);
+      void navigator.serviceWorker.register("/tech-portal-sw.js", { updateViaCache: "none" }).then(() => void syncNow()).catch(() => undefined);
+    }
+    return () => {
+      if ("serviceWorker" in navigator) navigator.serviceWorker.removeEventListener("message", onMessage);
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [syncNow]);
 
   const tasks = useMemo(() => dashboard?.tasks || [], [dashboard]);
@@ -1538,15 +1559,16 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
           {dashboard ? <p className="hidden text-right text-xs font-semibold text-[#475569] sm:block">{tasks.length} {copy.assignedJobs}</p> : null}
         </div>
 
-        {!isOnline || syncSummary.pending > 0 || syncSummary.syncing > 0 || syncSummary.failed > 0 || syncSummary.conflicts > 0 ? (
-          <div className={cn("mb-5 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm", !isOnline ? "border-[#D8A87B]/60 bg-[#F1D6B8]/55 text-[#68411f]" : syncSummary.conflicts > 0 || syncSummary.failed > 0 ? "border-rose-200 bg-rose-50 text-rose-900" : "border-[#B7D1EA] bg-[#B7D1EA]/35 text-[#1e405c]")} role="status" aria-live="polite">
-            {!isOnline ? <CloudOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> : isSyncing ? <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" aria-hidden="true" /> : <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />}
+        {!isOnline || syncSummary.pending > 0 || syncSummary.pendingAuth > 0 || syncSummary.syncing > 0 || syncSummary.failed > 0 || syncSummary.conflicts > 0 || syncSummary.rejected > 0 || syncSummary.pendingServer > 0 || syncSummary.pendingErp > 0 ? (
+          <div className={cn("mb-5 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm", !isOnline ? "border-[#D8A87B]/60 bg-[#F1D6B8]/55 text-[#68411f]" : syncSummary.conflicts > 0 || syncSummary.failed > 0 || syncSummary.rejected > 0 ? "border-rose-200 bg-rose-50 text-rose-900" : syncSummary.pendingAuth > 0 ? "border-[#D8A87B]/60 bg-[#F1D6B8]/55 text-[#68411f]" : "border-[#B7D1EA] bg-[#B7D1EA]/35 text-[#1e405c]")} role="status" aria-live="polite">
+            {!isOnline ? <CloudOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> : isSyncing ? <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" aria-hidden="true" /> : syncSummary.pendingAuth > 0 ? <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> : <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />}
             <div className="min-w-0 flex-1">
-              <p>{!isOnline ? copy.readOnlyOffline : isSyncing ? copy.syncInProgress : syncSummary.conflicts > 0 ? copy.syncConflict : syncSummary.failed > 0 ? copy.syncFailed : `${syncSummary.pending} ${copy.syncPending}`}</p>
+              <p>{!isOnline ? copy.readOnlyOffline : isSyncing ? copy.syncInProgress : syncSummary.pendingAuth > 0 ? copy.accessRequiredHint : syncSummary.conflicts > 0 ? copy.syncConflict : syncSummary.rejected > 0 ? copy.syncFailed : syncSummary.failed > 0 ? copy.syncFailed : syncSummary.pendingErp > 0 ? copy.erpSyncPending : syncSummary.pendingServer > 0 ? copy.erpSyncHint : `${syncSummary.pending} ${copy.syncPending}`}</p>
               {isOnline && syncSummary.pending > 0 ? <p className="mt-1 text-xs opacity-80">{syncSummary.pending} {copy.syncPending}</p> : null}
+              {isOnline && syncSummary.pendingErp > 0 ? <p className="mt-1 text-xs opacity-80">{copy.erpSyncHint}</p> : null}
             </div>
             {isOnline && !isSyncing && syncSummary.conflicts > 0 ? <button type="button" onClick={() => void handleRetryConflicts()} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-3 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2"><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{copy.retryConflicts}</button> : null}
-            {isOnline && !isSyncing && syncSummary.conflicts === 0 && (syncSummary.pending > 0 || syncSummary.failed > 0) ? <button type="button" onClick={() => void syncNow()} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-3 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2"><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{copy.syncNow}</button> : null}
+            {isOnline && !isSyncing && syncSummary.conflicts === 0 && syncSummary.pendingAuth === 0 && (syncSummary.pending > 0 || syncSummary.failed > 0) ? <button type="button" onClick={() => void syncNow({ forceRetry: true })} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-3 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2"><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{copy.syncNow}</button> : null}
           </div>
         ) : null}
 

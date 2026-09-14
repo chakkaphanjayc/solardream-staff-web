@@ -23,6 +23,9 @@ The Technical PWA keeps the existing identity and service worker contract at
 origin, IndexedDB names, cache names, or passkey RP ID without a migration
 runbook and a recovery test.
 
+The offline protocol and recovery checklist are documented in
+[`docs/TECHNICIAN_PORTAL_PWA.md`](docs/TECHNICIAN_PORTAL_PWA.md).
+
 ## Verification and production build
 
 ```bash

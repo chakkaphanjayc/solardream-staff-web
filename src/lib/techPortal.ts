@@ -128,6 +128,17 @@ function getPhaseEvent(events: typeof installationAuditEvents.$inferSelect[], ph
   }) || null;
 }
 
+function assertCommandFingerprint(
+  event: typeof installationAuditEvents.$inferSelect,
+  expectedFingerprint?: string,
+) {
+  if (!expectedFingerprint) return;
+  const storedFingerprint = getText(getEventPayload(event).commandFingerprint);
+  if (storedFingerprint && storedFingerprint !== expectedFingerprint) {
+    throw new TechPortalError("This idempotency key has already been used for different command content.", 409);
+  }
+}
+
 function getEvidenceUrl(
   evidence: typeof installationEvidence.$inferSelect,
   events: typeof installationAuditEvents.$inferSelect[],
@@ -179,7 +190,7 @@ async function getTaskAuditEvents(taskId: string) {
   });
 }
 
-async function getIdempotencyEvent(taskId: string, idempotencyKey: string, expectedEventType: string) {
+async function getIdempotencyEvent(taskId: string, idempotencyKey: string, expectedEventType: string, expectedFingerprint?: string) {
   const existing = await db.query.installationAuditEvents.findFirst({
     where: eq(installationAuditEvents.idempotencyKey, idempotencyKey),
   });
@@ -187,6 +198,7 @@ async function getIdempotencyEvent(taskId: string, idempotencyKey: string, expec
   if (existing.taskId !== taskId || existing.eventType !== expectedEventType) {
     throw new TechPortalError("This idempotency key has already been used for another operation.", 409);
   }
+  assertCommandFingerprint(existing, expectedFingerprint);
   return existing;
 }
 
@@ -328,7 +340,7 @@ function getLocalDateKey(date: Date, timeZone = process.env.SOLARDREAM_TIME_ZONE
   return `${values.get("year")}-${values.get("month")}-${values.get("day")}`;
 }
 
-export async function loadTechnicianDashboard(actor: InstallationActor): Promise<{ date: string; cacheScope: string; readOnly: boolean; tasks: TechDashboardTask[] }> {
+export async function loadTechnicianDashboard(actor: InstallationActor): Promise<{ date: string; cacheScope: string; actorUserId: string; readOnly: boolean; tasks: TechDashboardTask[] }> {
   const today = getLocalDateKey(new Date());
   const readOnly = canReviewInstallation(actor);
   const canonicalAssignmentRows = !readOnly
@@ -431,6 +443,7 @@ export async function loadTechnicianDashboard(actor: InstallationActor): Promise
   return {
     date: today,
     cacheScope: createHash("sha256").update(`solardream-tech-cache:${actor.userId}:${readOnly ? "review" : "assigned"}`).digest("hex"),
+    actorUserId: actor.userId,
     readOnly,
     tasks,
   };
@@ -465,8 +478,9 @@ export async function uploadTechnicianEvidence(input: {
   file: File;
   gps: TechnicianGps;
   source?: TechOperationSource;
+  commandFingerprint?: string;
 }) {
-  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "TECH_EVIDENCE_UPLOADED");
+  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "TECH_EVIDENCE_UPLOADED", input.commandFingerprint);
   if (existing) {
     const payload = getEventPayload(existing);
     const storedPhase = getText(payload.phase);
@@ -522,6 +536,7 @@ export async function uploadTechnicianEvidence(input: {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`technician:evidence:${input.access.task.id}:${validated.sha256}`}))`);
     const duplicate = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) });
     if (duplicate) {
+      assertCommandFingerprint(duplicate, input.commandFingerprint);
       const payload = getEventPayload(duplicate);
       const storedPhase = getText(payload.phase);
       return { reused: true, evidenceId: getText(payload.evidenceId) || null, phase: (storedPhase || input.phase) as TechPortalPhaseCode, sha256: getText(payload.sha256) || null, fileUrl: getText(payload.fileUrl) || null };
@@ -562,6 +577,7 @@ export async function uploadTechnicianEvidence(input: {
         gps,
         capturedAt: gps.capturedAt,
         source,
+        ...(input.commandFingerprint ? { commandFingerprint: input.commandFingerprint } : {}),
       },
       occurredAt: createdAt,
     }).returning({ id: installationAuditEvents.id });
@@ -620,8 +636,9 @@ export async function completeTechnicianQc(input: {
   evidenceIds: string[];
   idempotencyKey: string;
   source?: TechOperationSource;
+  commandFingerprint?: string;
 }) {
-  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "QC_PHASE_COMPLETED");
+  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "QC_PHASE_COMPLETED", input.commandFingerprint);
   if (existing) {
     const payload = getEventPayload(existing);
     return {
@@ -661,6 +678,7 @@ export async function completeTechnicianQc(input: {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`technician:qc:${input.access.task.id}:${input.phase}`}))`);
     const duplicate = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) });
     if (duplicate) {
+      assertCommandFingerprint(duplicate, input.commandFingerprint);
       const payload = getEventPayload(duplicate);
       return { reused: true, phase: input.phase, qualityInspectionId: getText(payload.qualityInspectionId) || null, completedAt: duplicate.occurredAt.toISOString() };
     }
@@ -694,6 +712,7 @@ export async function completeTechnicianQc(input: {
         evidenceHashes: readyEvidence.map((evidence) => evidence.sha256),
         verificationHash,
         source,
+        ...(input.commandFingerprint ? { commandFingerprint: input.commandFingerprint } : {}),
       },
       occurredAt: completedAt,
     }).returning({ id: installationAuditEvents.id });
@@ -762,8 +781,9 @@ export async function completeTechnicianHandover(input: {
   idempotencyKey: string;
   requestHeaders: Headers;
   source?: TechOperationSource;
+  commandFingerprint?: string;
 }) {
-  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "HANDOVER_COMPLETED");
+  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "HANDOVER_COMPLETED", input.commandFingerprint);
   if (existing) {
     const notification = await db.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, handoverNotificationKey(input.idempotencyKey)) });
     return { ...getExistingHandoverResult(existing, notification), warrantyRegistration: null };
@@ -833,6 +853,7 @@ export async function completeTechnicianHandover(input: {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`technician:handover:${input.access.task.id}`}))`);
     const duplicate = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) });
     if (duplicate) {
+      assertCommandFingerprint(duplicate, input.commandFingerprint);
       const notification = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, handoverNotificationKey(input.idempotencyKey)) });
       return getExistingHandoverResult(duplicate, notification);
     }
@@ -945,6 +966,7 @@ export async function completeTechnicianHandover(input: {
         notes: input.notes || null,
         completedAt: completedAt.toISOString(),
         source,
+        ...(input.commandFingerprint ? { commandFingerprint: input.commandFingerprint } : {}),
       },
       occurredAt: completedAt,
     }).returning({ id: installationAuditEvents.id });
@@ -1069,8 +1091,9 @@ export async function startTechnicianJob(input: {
   gps: TechnicianGps;
   idempotencyKey: string;
   source?: TechOperationSource;
+  commandFingerprint?: string;
 }) {
-  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "JOB_STARTED");
+  const existing = await getIdempotencyEvent(input.access.task.id, input.idempotencyKey, "JOB_STARTED", input.commandFingerprint);
   if (existing) {
     const payload = getEventPayload(existing);
     return {
@@ -1096,6 +1119,7 @@ export async function startTechnicianJob(input: {
     if (!lockedTask) throw new TechPortalError("Task not found.", 404);
     const duplicate = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) });
     if (duplicate) {
+      assertCommandFingerprint(duplicate, input.commandFingerprint);
       const payload = getEventPayload(duplicate);
       return { reused: true, taskId: lockedTask.id, timesheetId: getText(payload.timesheetId) || null, startedAt: duplicate.occurredAt.toISOString() };
     }
@@ -1184,6 +1208,7 @@ export async function startTechnicianJob(input: {
         gps,
         startedAt: startedAt.toISOString(),
         source,
+        ...(input.commandFingerprint ? { commandFingerprint: input.commandFingerprint } : {}),
       },
       occurredAt: startedAt,
     }).returning({ id: installationAuditEvents.id });

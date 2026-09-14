@@ -138,6 +138,7 @@ export async function registerInstalledAsset(actor: OpsActor, input: {
   productWarrantyProvider?: string | null;
   productWarrantyMonths?: number | null;
   idempotencyKey: string;
+  commandFingerprint?: string;
 }) {
   assertCapability(actor, "asset.register", "Asset registration is not permitted.");
   const idempotencyKey = validateKey(input.idempotencyKey);
@@ -164,6 +165,10 @@ export async function registerInstalledAsset(actor: OpsActor, input: {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"ops-v2:asset:" + serialNumberNormalized}))`);
     const replay = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, idempotencyKey) });
     if (replay) {
+      const storedFingerprint = asText(asObject(replay.payload).commandFingerprint);
+      if (input.commandFingerprint && storedFingerprint && storedFingerprint !== input.commandFingerprint) {
+        throw new OpsDomainError("CONFLICT", "This idempotency key has already been used for different command content.");
+      }
       const assetId = asText(asObject(replay.payload).assetId);
       const asset = assetId ? await tx.query.installedAssets.findFirst({ where: eq(installedAssets.id, assetId) }) : null;
       if (asset) return { asset: serializeAsset(asset), replayed: true };
@@ -218,6 +223,7 @@ export async function registerInstalledAsset(actor: OpsActor, input: {
         serialNumberNormalized,
         verificationStatus,
         source: "OPS_V2",
+        ...(input.commandFingerprint ? { commandFingerprint: input.commandFingerprint } : {}),
       },
     }).returning({ id: installationAuditEvents.id });
     if (!audit) throw new OpsDomainError("CONFLICT", "Asset audit event could not be recorded.");

@@ -1,4 +1,4 @@
-const CACHE_NAME = "solardream-tech-portal-v4";
+const CACHE_NAME = "solardream-tech-portal-v5";
 const STATIC_ASSETS = ["/asset/sd-logo.png"];
 
 function isTechnicianNavigation(pathname) {
@@ -8,6 +8,29 @@ function isTechnicianNavigation(pathname) {
     || path.startsWith("/tech-portal/")
     || path === "/tech/work-orders"
     || path.startsWith("/tech/work-orders/");
+}
+
+function hasAuthChallengeHeaders(response) {
+  return [
+    "cf-mitigated",
+    "x-auth-request-redirect",
+    "x-zerotrust-login",
+    "x-sso-login",
+  ].some((header) => response.headers.has(header));
+}
+
+function isSafeTechnicianDocument(request, response) {
+  if (!response.ok || response.type === "opaque") return false;
+  if (!response.headers.get("content-type")?.toLowerCase().includes("text/html")) return false;
+  if (hasAuthChallengeHeaders(response)) return false;
+  const responseUrl = new URL(response.url || request.url, self.location.origin);
+  return isTechnicianNavigation(responseUrl.pathname);
+}
+
+function isSafeStaticAsset(response) {
+  return response.ok
+    && response.type !== "opaque"
+    && response.headers.get("content-type")?.toLowerCase().startsWith("image/") === true;
 }
 
 self.addEventListener("install", (event) => {
@@ -52,7 +75,7 @@ self.addEventListener("fetch", (event) => {
   if (isStaticAsset) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-        if (response.ok) {
+        if (isSafeStaticAsset(response)) {
           const copy = response.clone();
           void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }
@@ -65,7 +88,9 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate" && isTechnicianRoute) {
     event.respondWith(
       fetch(request).then((response) => {
-        if (response.ok) {
+        // A Zero Trust redirect or challenge can return status 200 with HTML.
+        // Never put that response in the Technical shell cache.
+        if (isSafeTechnicianDocument(request, response)) {
           const copy = response.clone();
           void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }

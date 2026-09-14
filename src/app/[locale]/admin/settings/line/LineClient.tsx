@@ -54,6 +54,7 @@ import {
   sortLineQuickButtons,
   type LineConversationConfig,
   type LineQuickButton,
+  type LineQuickReplyConfig,
   type LineTriggerConfig,
 } from "@/lib/lineAutomationConfig";
 
@@ -107,6 +108,7 @@ interface LineClientProps {
   initialQuickButtons: LineQuickButton[];
   initialLoginUrl: string;
   initialConversation: LineConversationConfig;
+  initialQuickReply?: LineQuickReplyConfig;
   productsList: DBProduct[];
   proposalsList: DBProposal[];
 }
