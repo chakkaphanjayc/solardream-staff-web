@@ -38,7 +38,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-!next-env.d.ts
 
 # Override global gitignore for local source directories named build
 !/src/app/build/
