@@ -1,0 +1,11 @@
+{
+  "name": "@solar-dream/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./app-surfaces": "./src/app-surfaces.ts",
+    "./tech-sync": "./src/tech-sync.ts"
+  }
+}

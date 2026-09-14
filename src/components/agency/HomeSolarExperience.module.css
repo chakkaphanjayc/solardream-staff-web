@@ -1,0 +1,30 @@
+.tabletScaleSection {
+  --home-tablet-scale: clamp(0.6, calc(100vw / 1400px), 0.76);
+}
+
+.tabletScaleContent {
+  width: 100%;
+}
+
+@media (min-width: 768px) and (max-width: 1279px) and (orientation: landscape) {
+  .tabletScaleSection {
+    align-items: flex-start !important;
+    height: 100svh;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .tabletScaleContent {
+    flex: 0 0 auto;
+    height: calc(100svh / var(--home-tablet-scale));
+    max-width: none;
+    overflow: hidden;
+    transform: scale(var(--home-tablet-scale));
+    transform-origin: top center;
+    width: calc(100% / var(--home-tablet-scale));
+  }
+
+  .tabletScaleBelowChrome .tabletScaleContent {
+    transform: translateY(2rem) scale(var(--home-tablet-scale));
+  }
+}

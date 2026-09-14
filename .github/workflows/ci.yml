@@ -1,0 +1,64 @@
+name: SolarDream Staff Web
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  SOLARDREAM_APP_SURFACE: staff
+  NEXT_PUBLIC_SITE_URL: https://solar-dream.org
+  NEXT_PUBLIC_ADMIN_URL: https://admin.solar-dream.org
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:9
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify repository boundary
+        run: npm run verify:standalone
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Verify message parity
+        run: npm run i18n:check
+
+      - name: Build standalone server
+        env:
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
+          NEXT_DEPLOYMENT_ID: ${{ github.sha }}
+        run: npm run build
+
+      - name: Build production image
+        env:
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
+          NEXT_DEPLOYMENT_ID: ${{ github.sha }}
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_SITE_URL="$NEXT_PUBLIC_SITE_URL" \
+            --build-arg NEXT_PUBLIC_ADMIN_URL="$NEXT_PUBLIC_ADMIN_URL" \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+            --build-arg NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY" \
+            --build-arg NEXT_DEPLOYMENT_ID="$NEXT_DEPLOYMENT_ID" \
+            --tag solardream-staff-web:ci \
+            .

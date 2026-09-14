@@ -1,0 +1,35 @@
+import { readFileSync } from "node:fs";
+import { multiServiceConfirmSchema, multiServiceQuoteSchema, serviceLocationSchema, servicePromotionAdminSchema } from "../../src/lib/serviceMultiContracts";
+import { allocateDiscount, basisPointDiscount, decimalToSatang, eligibleBundleOfferingIds, formulaPriceSatang, serviceInvoiceItemsMatch } from "../../src/lib/servicePricing";
+import { classifyMultiServiceError, requireServiceQuoteSecret, ServiceConfigurationError, serviceCommerceReadiness } from "../../src/lib/serviceMultiErrors";
+
+if (decimalToSatang("123.45") !== 12345) throw new Error("Decimal to satang conversion failed.");
+if (formulaPriceSatang({ basePrice: "100.00", ratePerKwp: "10.00", minimumPrice: "0.00", loyaltyDiscount: "5.00" }, 2.555, true) !== 12055) throw new Error("Integer formula pricing failed.");
+if (basisPointDiscount(10001, 1000) !== 1000) throw new Error("Basis-point rounding contract failed.");
+const bundleMembers = eligibleBundleOfferingIds(["A", "B", "C"], ["A", "B"], 2); if (bundleMembers.size !== 2 || !bundleMembers.has("A") || !bundleMembers.has("B") || bundleMembers.has("C")) throw new Error("Restricted A+B bundle did not remain eligible for A+B+C.");
+if (eligibleBundleOfferingIds(["A", "B", "C"], ["A", "B", "D"], 2).size) throw new Error("Bundle applied without every configured restricted item.");
+const allocated = allocateDiscount([{ key: "a", unitSatang: 10001, quantity: 1 }, { key: "b", unitSatang: 20002, quantity: 1 }], 3000);
+if (allocated.reduce((sum, line) => sum + line.discountSatang, 0) !== 3000 || allocated.reduce((sum, line) => sum + line.totalSatang, 0) !== 27003) throw new Error("Exact discount allocation failed.");
+if (!serviceInvoiceItemsMatch([{ item_code: "A", qty: 1, rate: 100.01, amount: 100.01 }, { item_code: "B", qty: 1, rate: 200.02, amount: 200.02 }], [{ item_code: "B", qty: 1, rate: 200.02, amount: 200.02 }, { item_code: "A", qty: 1, rate: 100.01, amount: 100.01 }])) throw new Error("Exact ERP item verification rejected a matching invoice.");
+if (serviceInvoiceItemsMatch([{ item_code: "A", qty: 1, rate: 100, amount: 100 }], [{ item_code: "A", qty: 1, rate: 99, amount: 99 }])) throw new Error("ERP item verification accepted a mismatched rate.");
+if (multiServiceQuoteSchema.safeParse({ offeringSlugs: ["inspection", "inspection"], system: { systemSource: "EXTERNAL", systemDetails: { systemSizeKw: 5, inverterBrandCode: "HUAWEI", roofTypeCode: "TILE" } } }).success) throw new Error("Duplicate services were accepted.");
+if (multiServiceQuoteSchema.safeParse({ offeringSlugs: ["inspection"], system: { systemSource: "EXTERNAL", systemDetails: { systemSizeKw: 5, inverterBrandCode: "HUAWEI", roofTypeCode: "TILE" } }, location: { latitude: 13.7, longitude: 100.5, displayName: "Bangkok, Thailand", attribution: "© OpenStreetMap contributors" } }).success) throw new Error("Quote accepted exact location before confirmation.");
+if (serviceLocationSchema.safeParse({ latitude: 91, longitude: 100, displayName: "Bangkok", attribution: "© OpenStreetMap contributors" }).success) throw new Error("Out-of-range location was accepted.");
+if (multiServiceConfirmSchema.safeParse({ quoteRef: `qv1.${crypto.randomUUID()}.${"a".repeat(43)}.${"b".repeat(43)}`, action: "REQUEST_QUOTE", locale: "th", appointmentDate: new Date(), contact: { fullName: "Test Person", phone: "0812345678", email: "test@example.com", serviceAddress: "123 Example Road" }, necessaryConsent: false }).success) throw new Error("Confirmation without necessary consent was accepted.");
+multiServiceConfirmSchema.parse({ quoteRef: `qv1.${crypto.randomUUID()}.${"a".repeat(43)}.${"b".repeat(43)}`, action: "REQUEST_QUOTE", locale: "th", appointmentDate: new Date(), location: { latitude: 13.7, longitude: 100.5, displayName: "Bangkok, Thailand", attribution: "© OpenStreetMap contributors" }, contact: { fullName: "Test Person", phone: "0812345678", email: "test@example.com", serviceAddress: "123 Example Road" }, necessaryConsent: true });
+const migration = readFileSync("drizzle/0076_service_cart_configurator.sql", "utf8");
+for (const required of ["minimum_distinct_items", "AUTO_MULTI_SERVICE_10", "discount_bps", "1000,2,true", "service_quote_sessions_actor_expiry_idx", "service_promotion_redemptions_actor_idx", "DROP INDEX IF EXISTS public.service_requests_service_order_id_key", "service_order_item_id"]) if (!migration.includes(required)) throw new Error(`0076 invariant missing: ${required}`);
+const implementation = readFileSync("src/lib/serviceMultiCommerce.ts", "utf8");
+const errorImplementation = readFileSync("src/lib/serviceMultiErrors.ts", "utf8");
+if (implementation.includes("SERVICE_PORTAL_TOKEN_SECRET") || implementation.includes("inputSnapshot: input")) throw new Error("Quote implementation retains a forbidden secret fallback or raw input snapshot.");
+for (const required of ["timingSafeEqual", "hideAmounts ? null", "inputSnapshot: sanitizedInput"]) if (!implementation.includes(required)) throw new Error(`Quote hardening missing: ${required}`);
+for (const required of ["SERVICE_QUOTE_SECRET", "ServiceConfigurationError", "SERVICE_CONFIGURATION_ERROR"]) if (!errorImplementation.includes(required)) throw new Error(`Quote error contract missing: ${required}`);
+for (const required of ["paymentRequirement: \"NOT_REQUIRED\"", "issueGuestServicePortalAccess(tx", "eligibleBundleOfferingIds", "erp.service_quote.requested"]) if (!implementation.includes(required)) throw new Error(`Phase 4 hardening missing: ${required}`);
+if (servicePromotionAdminSchema.safeParse({ code: "OVER", name: { en: "Over", th: "เกิน" }, discountType: "PERCENT_BPS", value: 10001, minimumSubtotalSatang: 0, maximumDiscountSatang: null, usageLimit: null, perActorLimit: 1, eligibility: [], isActive: true }).success) throw new Error("Percentage promotion above 10000 bps was accepted.");
+if (serviceCommerceReadiness({ ...process.env, SERVICE_QUOTE_SECRET: "short" }).ready) throw new Error("Short quote secret passed readiness.");
+try { requireServiceQuoteSecret("short"); throw new Error("Short quote secret was accepted."); } catch (error) { if (!(error instanceof ServiceConfigurationError)) throw error; }
+const configFailure = classifyMultiServiceError(new ServiceConfigurationError("missing"));
+if (configFailure.status !== 503 || configFailure.code !== "SERVICE_CONFIGURATION_ERROR") throw new Error("Configuration failure did not map to retryable 503.");
+const staleOption = classifyMultiServiceError(new Error("SYSTEM_OPTION_UNAVAILABLE"));
+if (staleOption.status !== 422 || staleOption.code !== "SYSTEM_OPTION_UNAVAILABLE") throw new Error("Stale system option mapping failed.");
+process.stdout.write("Multi-service pricing and security contracts passed.\n");

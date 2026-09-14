@@ -1,0 +1,6 @@
+import "server-only";
+import { and,eq,sql } from "drizzle-orm";
+import { db } from "@/db";
+import { salesProposalRevisionItems,salesProposalRevisions,salesProposals } from "@/db/schema";
+import type { CommercialSnapshot,JsonValue } from "@/types/sales-v2";
+export async function createProposalRevision(input:{proposalId:string;currency:string;snapshot:CommercialSnapshot;items:Array<{description:string;quantity:string;unitPrice:string;total:string;snapshot?:Record<string,JsonValue>}>}){return db.transaction(async tx=>{const proposal=await tx.query.salesProposals.findFirst({where:eq(salesProposals.id,input.proposalId)});if(!proposal)throw new Error("Proposal not found");const [revision]=await tx.insert(salesProposalRevisions).values({proposalId:input.proposalId,revisionNumber:proposal.version,currency:input.currency,total:String(input.snapshot.total),commercialSnapshot:{...input.snapshot}}).returning();if(!revision)throw new Error("Revision insert failed");if(input.items.length)await tx.insert(salesProposalRevisionItems).values(input.items.map((item,index)=>({...item,revisionId:revision.id,lineNumber:index+1,snapshot:item.snapshot??{}})));await tx.update(salesProposals).set({version:sql`${salesProposals.version}+1`,updatedAt:new Date()}).where(and(eq(salesProposals.id,input.proposalId),eq(salesProposals.version,proposal.version)));return revision;});}

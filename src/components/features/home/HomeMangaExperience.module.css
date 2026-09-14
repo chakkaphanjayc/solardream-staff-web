@@ -1,0 +1,183 @@
+.experience {
+  --manga-ink: #0F172A;
+  --manga-paper: #F7F6F3;
+  --manga-blue: #2B9EB3;
+  --manga-sun: #D8A87B;
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background: var(--manga-paper);
+}
+
+.chapterSection {
+  position: relative;
+  display: flex;
+  min-height: min(90svh, 54rem);
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(3.5rem, 6vw, 5.5rem) clamp(1rem, 4vw, 4rem);
+}
+
+.heroSection {
+  min-height: max(42rem, 100svh);
+  padding-top: clamp(4.5rem, 7vw, 6rem);
+}
+
+.chapterFrame {
+  position: relative;
+  width: min(100%, 90rem);
+  margin-inline: auto;
+}
+
+.heroFrame {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--manga-ink) 56%, transparent);
+  background: rgba(253, 251, 247, 0.82);
+  box-shadow: 3px 3px 0 rgb(15 23 42 / 0.24), 0 12px 24px -18px rgb(15 23 42 / 0.18);
+  /* Straight comic panel frame — no diagonal clip */
+}
+
+.heroFrame::before,
+.heroFrame::after {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  content: "";
+}
+
+.heroFrame::before {
+  top: 7%;
+  left: -6%;
+  width: 34%;
+  height: 0.2rem;
+  background: color-mix(in srgb, var(--manga-ink) 48%, transparent);
+  transform: rotate(-9deg);
+  box-shadow: 4rem 1.2rem 0 rgba(0, 0, 0, 0.82), 7rem 2.45rem 0 rgba(0, 0, 0, 0.6);
+}
+
+.heroFrame::after {
+  right: -3%;
+  bottom: 8%;
+  width: 18%;
+  height: 0.3rem;
+  background: var(--manga-sun);
+  transform: rotate(-9deg);
+  box-shadow: -3rem 1rem 0 var(--manga-ink);
+}
+
+.chapterFrame > [data-manga-chapter] {
+  min-height: 100%;
+}
+
+.chapterLabel {
+  position: absolute;
+  top: clamp(1rem, 3vw, 2rem);
+  left: clamp(1rem, 3vw, 2rem);
+  z-index: 20;
+}
+
+.chapterContent {
+  position: relative;
+  z-index: 10;
+  width: min(100%, 90rem);
+  margin-inline: auto;
+}
+
+.chapterContent :global([data-bagui="card"]) {
+  border-color: color-mix(in srgb, var(--manga-ink) 42%, transparent);
+  border-width: 2px;
+  box-shadow: 2px 2px 0 rgb(15 23 42 / 0.18);
+}
+
+.chapterContent :global(.motion-lift:hover) {
+  transform: translateY(-3px) rotate(-0.3deg);
+}
+
+.chapterContent :global(.premium-glass),
+.chapterContent :global(.premium-glass-dark),
+.chapterContent :global(.premium-glass-interactive) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.heroFrame :global([data-bagui="weather-simulator"]) {
+  min-height: clamp(42rem, 76vh, 55rem);
+  background: transparent;
+}
+
+.chapterAccent {
+  position: absolute;
+  z-index: 3;
+  width: clamp(5rem, 14vw, 13rem);
+  height: clamp(0.2rem, 0.45vw, 0.35rem);
+  background: var(--manga-sun);
+  box-shadow: 0.5rem 0.5rem 0 color-mix(in srgb, var(--manga-ink) 18%, transparent);
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.chapterAccentTop {
+  top: 7%;
+  right: 4%;
+}
+
+.chapterAccentBottom {
+  bottom: 9%;
+  left: 4%;
+  transform: rotate(8deg);
+}
+
+.portfolioFrame {
+  width: min(100%, 96rem);
+  margin-inline: auto;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--manga-ink) 48%, transparent);
+  box-shadow: 3px 3px 0 rgb(15 23 42 / 0.24), 0 12px 24px -18px rgb(15 23 42 / 0.18);
+  background: color-mix(in srgb, var(--manga-ink) 8%, var(--manga-paper));
+}
+
+.finalSection {
+  min-height: auto;
+  align-items: stretch;
+  padding-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .chapterSection {
+    min-height: auto;
+    padding: 3.5rem 0.8rem 3rem;
+  }
+
+  .heroSection {
+    min-height: 100svh;
+    padding-top: 4.75rem;
+  }
+
+  .heroFrame,
+  .portfolioFrame {
+    box-shadow: 2px 2px 0 rgb(15 23 42 / 0.18);
+  }
+
+  .heroFrame :global([data-bagui="weather-simulator"]) {
+    min-height: auto;
+  }
+
+  .chapterLabel {
+    top: 0.75rem;
+    left: 0.75rem;
+  }
+
+  .chapterContent :global([data-bagui="card"]) {
+    box-shadow: 2px 2px 0 rgb(15 23 42 / 0.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroFrame::before,
+  .heroFrame::after,
+  .chapterAccent {
+    transform: none;
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@solar-dream/auth-adapters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cookie": "./src/cookie.ts",
+    "./roles": "./src/roles.ts"
+  }
+}

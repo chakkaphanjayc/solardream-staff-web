@@ -1,0 +1,821 @@
+@import "tailwindcss";
+
+/* SolarDream operations console, deliberately close to GitHub's product UI.
+   Dark is the default; the shared semantic tokens also support the opt-in
+   light theme from the admin topbar. */
+
+.solar-ops,
+body.solar-ops-portal {
+  --solar-ops-workspace: #0d1117;
+  --solar-ops-surface: #161b22;
+  --solar-ops-hover: #21262d;
+  --solar-ops-border: rgb(139 148 158 / 0.32);
+  --solar-ops-border-strong: rgb(139 148 158 / 0.48);
+  --solar-ops-text: #f0f6fc;
+  --solar-ops-body: #c9d1d9;
+  --solar-ops-muted: #8b949e;
+  --solar-ops-green: #238636;
+  --solar-ops-green-hover: #2ea043;
+  --solar-ops-green-bright: #3fb950;
+  --solar-ops-blue: #58a6ff;
+  --solar-ops-orange: #C58F61;
+  --solar-ops-yellow: #d29922;
+  --solar-ops-red: #f85149;
+  color: var(--solar-ops-body);
+  background: var(--solar-ops-workspace);
+  color-scheme: dark;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+}
+
+.solar-ops[data-admin-theme="light"],
+body.solar-ops-portal[data-admin-theme="light"] {
+  --solar-ops-workspace: #f6f8fa;
+  --solar-ops-surface: #ffffff;
+  --solar-ops-hover: #eef1f4;
+  --solar-ops-border: rgb(31 35 40 / 0.16);
+  --solar-ops-border-strong: rgb(31 35 40 / 0.28);
+  --solar-ops-text: #1f2328;
+  --solar-ops-body: #424a53;
+  --solar-ops-muted: #656d76;
+  --solar-ops-green: #1f883d;
+  --solar-ops-green-hover: #1a7f37;
+  --solar-ops-green-bright: #1a7f37;
+  --solar-ops-blue: #0969da;
+  --solar-ops-orange: #9a6700;
+  --solar-ops-yellow: #9a6700;
+  --solar-ops-red: #cf222e;
+  color: var(--solar-ops-body);
+  background-color: var(--solar-ops-workspace) !important;
+  color-scheme: light;
+}
+
+/* These selectors let legacy Tailwind utilities participate in the same
+   token system while older admin screens migrate incrementally. */
+.solar-ops :is([class*="bg-[#0d1117]"], [class*="bg-[#0D1117]"]),
+body.solar-ops-portal :is([class*="bg-[#0d1117]"], [class*="bg-[#0D1117]"]) {
+  background-color: var(--solar-ops-workspace) !important;
+}
+
+.solar-ops :is([class*="bg-[#161b22]"], [class*="bg-[#161B22]"]),
+body.solar-ops-portal :is([class*="bg-[#161b22]"], [class*="bg-[#161B22]"]) {
+  background-color: var(--solar-ops-surface) !important;
+}
+
+.solar-ops :is([class*="bg-[#21262d]"], [class*="bg-[#21262D]"]),
+body.solar-ops-portal :is([class*="bg-[#21262d]"], [class*="bg-[#21262D]"]) {
+  background-color: var(--solar-ops-hover) !important;
+}
+
+.solar-ops :is([class*="text-[#f0f6fc]"], [class*="text-[#F0F6FC]"]),
+body.solar-ops-portal :is([class*="text-[#f0f6fc]"], [class*="text-[#F0F6FC]"]) {
+  color: var(--solar-ops-text) !important;
+}
+
+.solar-ops :is([class*="text-[#c9d1d9]"], [class*="text-[#C9D1D9]"]),
+body.solar-ops-portal :is([class*="text-[#c9d1d9]"], [class*="text-[#C9D1D9]"]) {
+  color: var(--solar-ops-body) !important;
+}
+
+.solar-ops :is([class*="text-[#8b949e]"], [class*="text-[#8B949E]"], [class*="text-[#6e7681]"], [class*="text-[#6E7681]"], [class*="text-[#484f58]"], [class*="text-[#484F58]"]),
+body.solar-ops-portal :is([class*="text-[#8b949e]"], [class*="text-[#8B949E]"], [class*="text-[#6e7681]"], [class*="text-[#6E7681]"], [class*="text-[#484f58]"], [class*="text-[#484F58]"]) {
+  color: var(--solar-ops-muted) !important;
+}
+
+.solar-ops :is([class*="border-[#30363d]"], [class*="border-[#30363D]"]),
+body.solar-ops-portal :is([class*="border-[#30363d]"], [class*="border-[#30363D]"]) {
+  border-color: var(--solar-ops-border) !important;
+}
+
+.solar-ops[data-admin-theme="light"] .sales-workspace,
+.solar-ops[data-admin-theme="light"] .admin-crm-workbench {
+  color-scheme: light;
+}
+
+body.solar-ops-portal {
+  min-width: 320px;
+  overflow-x: clip;
+}
+
+.solar-ops ::selection,
+body.solar-ops-portal ::selection {
+  color: var(--solar-ops-text);
+  background: rgb(88 166 255 / 0.35);
+}
+
+.solar-ops :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea),
+body.solar-ops-portal :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea) {
+  min-height: 2.5rem;
+  border: 1px solid var(--solar-ops-border);
+  border-radius: 0.75rem;
+  outline: none;
+  background-color: var(--solar-ops-workspace);
+  color: var(--solar-ops-text);
+  color-scheme: dark;
+}
+
+.solar-ops textarea,
+body.solar-ops-portal textarea {
+  min-height: 5rem;
+}
+
+.solar-ops :is(input, select, textarea)::placeholder,
+body.solar-ops-portal :is(input, select, textarea)::placeholder {
+  color: var(--solar-ops-muted);
+  opacity: 1;
+}
+
+.solar-ops :is(input, select, textarea):focus,
+body.solar-ops-portal :is(input, select, textarea):focus {
+  border-color: var(--solar-ops-blue);
+  box-shadow: 0 0 0 1px var(--solar-ops-blue);
+}
+
+.solar-ops .admin-showcase-input,
+body.solar-ops-portal .admin-showcase-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.solar-ops label:has(> :is(input, select, textarea)) > :is(span, strong):first-child,
+body.solar-ops-portal label:has(> :is(input, select, textarea)) > :is(span, strong):first-child {
+  display: block;
+  margin-bottom: 0.375rem;
+  color: var(--solar-ops-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.solar-ops :is(button, a, [role="button"]):focus-visible,
+body.solar-ops-portal :is(button, a, [role="button"]):focus-visible {
+  outline: 2px solid var(--solar-ops-blue);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.solar-ops :is(table tbody tr, [role="row"]),
+body.solar-ops-portal :is(table tbody tr, [role="row"]) {
+  border-bottom: 1px solid var(--solar-ops-border);
+  transition: background-color 150ms ease-out;
+}
+
+.solar-ops :is(table tbody tr, [role="row"]):hover,
+body.solar-ops-portal :is(table tbody tr, [role="row"]):hover {
+  background-color: var(--solar-ops-hover);
+}
+
+.solar-ops :is(button, a, [role="button"]),
+body.solar-ops-portal :is(button, a, [role="button"]) {
+  transition-timing-function: ease-out;
+}
+
+/* Shared primitives for new shell surfaces. */
+.solar-ops .ops-surface,
+body.solar-ops-portal .ops-surface {
+  border: 1px solid var(--solar-ops-border);
+  border-radius: 1rem;
+  background: var(--solar-ops-surface);
+}
+
+.solar-ops .ops-muted,
+body.solar-ops-portal .ops-muted {
+  color: var(--solar-ops-muted);
+}
+
+/* Keep older admin screens legible while they migrate to the shared tokens. */
+.solar-ops :is([class*="text-slate-9"], [class*="text-slate-8"], [class*="text-slate-7"], [class*="text-gray-9"], [class*="text-gray-8"], [class*="text-gray-7"], [class*="text-black"]),
+body.solar-ops-portal :is([class*="text-slate-9"], [class*="text-slate-8"], [class*="text-slate-7"], [class*="text-gray-9"], [class*="text-gray-8"], [class*="text-gray-7"], [class*="text-black"]) {
+  color: var(--solar-ops-text) !important;
+}
+
+.solar-ops :is([class*="text-slate-3"], [class*="text-gray-3"]),
+body.solar-ops-portal :is([class*="text-slate-3"], [class*="text-gray-3"]) {
+  color: var(--solar-ops-body) !important;
+}
+
+.solar-ops :is([class*="text-slate-4"], [class*="text-slate-5"], [class*="text-slate-6"], [class*="text-gray-4"], [class*="text-gray-5"], [class*="text-gray-6"]),
+body.solar-ops-portal :is([class*="text-slate-4"], [class*="text-slate-5"], [class*="text-slate-6"], [class*="text-gray-4"], [class*="text-gray-5"], [class*="text-gray-6"]) {
+  color: var(--solar-ops-muted) !important;
+}
+
+.solar-ops :is([class*="bg-white"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-gray-50"], [class*="bg-gray-100"], [class*="bg-[#F0EEE9]"], [class*="bg-[#F7F6F3]"], [class*="bg-[#F5F2EB]"], [class*="bg-[#0F172A]"]),
+body.solar-ops-portal :is([class*="bg-white"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-gray-50"], [class*="bg-gray-100"], [class*="bg-[#F0EEE9]"], [class*="bg-[#F7F6F3]"], [class*="bg-[#F5F2EB]"], [class*="bg-[#0F172A]"]) {
+  background-color: var(--solar-ops-surface) !important;
+  border-color: var(--solar-ops-border);
+}
+
+.solar-ops :is([class*="bg-slate-900"], [class*="bg-[#0B1121"]]),
+body.solar-ops-portal :is([class*="bg-slate-900"], [class*="bg-[#0B1121]"]) {
+  background-color: var(--solar-ops-workspace) !important;
+  border-color: var(--solar-ops-border);
+}
+
+.solar-ops :is([class*="border-slate-800"], [class*="border-slate-700"], [class*="border-[#1E293B"]]),
+body.solar-ops-portal :is([class*="border-slate-800"], [class*="border-slate-700"], [class*="border-[#1E293B]"]) {
+  border-color: var(--solar-ops-border) !important;
+}
+
+/* Older admin pages use black/navy utility borders and offset shadows. Keep
+   their state colors, but bring their resting geometry into a lighter manga
+   neo-brutalist shell. */
+.solar-ops :is(
+  [class*="border-[#000"],
+  [class*="border-[#0F172A"],
+  [class*="border-[#1E293B"],
+  [class~="border-black"],
+  [class*="border-slate-900"],
+  [class*="border-[#30363d"]]
+),
+body.solar-ops-portal :is(
+  [class*="border-[#000"],
+  [class*="border-[#0F172A"],
+  [class*="border-[#1E293B"],
+  [class~="border-black"],
+  [class*="border-slate-900"],
+  [class*="border-[#30363d"]]
+) {
+  border-color: var(--solar-ops-border-strong) !important;
+}
+
+.solar-ops :is(
+  [class*="border-3"],
+  [class*="border-4"],
+  [class*="border-[3px"],
+  [class*="border-[3.5px"],
+  [class*="border-[4px"],
+  [class*="border-l-3"],
+  [class*="border-l-4"],
+  [class*="border-r-3"],
+  [class*="border-r-4"],
+  [class*="border-t-3"],
+  [class*="border-t-4"],
+  [class*="border-b-3"],
+  [class*="border-b-4"],
+  [class*="border-l-[3px"],
+  [class*="border-l-[3.5px"],
+  [class*="border-l-[4px"],
+  [class*="border-r-[3px"],
+  [class*="border-r-[3.5px"],
+  [class*="border-r-[4px"],
+  [class*="border-t-[3px"],
+  [class*="border-t-[3.5px"],
+  [class*="border-t-[4px"],
+  [class*="border-b-[3px"],
+  [class*="border-b-[3.5px"],
+  [class*="border-b-[4px"]
+),
+body.solar-ops-portal :is(
+  [class*="border-3"],
+  [class*="border-4"],
+  [class*="border-[3px"],
+  [class*="border-[3.5px"],
+  [class*="border-[4px"],
+  [class*="border-l-3"],
+  [class*="border-l-4"],
+  [class*="border-r-3"],
+  [class*="border-r-4"],
+  [class*="border-t-3"],
+  [class*="border-t-4"],
+  [class*="border-b-3"],
+  [class*="border-b-4"],
+  [class*="border-l-[3px"],
+  [class*="border-l-[3.5px"],
+  [class*="border-l-[4px"],
+  [class*="border-r-[3px"],
+  [class*="border-r-[3.5px"],
+  [class*="border-r-[4px"],
+  [class*="border-t-[3px"],
+  [class*="border-t-[3.5px"],
+  [class*="border-t-[4px"],
+  [class*="border-b-[3px"],
+  [class*="border-b-[3.5px"],
+  [class*="border-b-[4px"]
+) {
+  border-width: 2px !important;
+}
+
+.solar-ops :is(
+  [class*="shadow-[2px_2px_0"],
+  [class*="shadow-[3px_3px_0"],
+  [class*="shadow-[4px_4px_0"],
+  [class*="shadow-[6px_6px_0"],
+  [class*="shadow-[8px_8px_0"],
+  [class*="shadow-[10px_10px_0"],
+  [class*="shadow-[12px_12px_0"]
+),
+body.solar-ops-portal :is(
+  [class*="shadow-[2px_2px_0"],
+  [class*="shadow-[3px_3px_0"],
+  [class*="shadow-[4px_4px_0"],
+  [class*="shadow-[6px_6px_0"],
+  [class*="shadow-[8px_8px_0"],
+  [class*="shadow-[10px_10px_0"],
+  [class*="shadow-[12px_12px_0"]
+) {
+  box-shadow: 2px 2px 0 rgb(0 0 0 / 0.55) !important;
+}
+
+/* SolarDream blue remains available for links and focus, while primary actions use GitHub green. */
+.solar-ops :is(a, button, [role="button"])[class*="bg-[#B7D1EA]"],
+.solar-ops :is(a, button, [role="button"])[class*="bg-windbreeze"],
+body.solar-ops-portal :is(a, button, [role="button"])[class*="bg-[#B7D1EA]"],
+body.solar-ops-portal :is(a, button, [role="button"])[class*="bg-windbreeze"] {
+  border-color: rgb(240 246 252 / 0.1) !important;
+  background-color: var(--solar-ops-green) !important;
+  color: #ffffff !important;
+}
+
+.solar-ops :is(a, button, [role="button"])[class*="bg-[#B7D1EA]"]:hover,
+.solar-ops :is(a, button, [role="button"])[class*="bg-windbreeze"]:hover,
+body.solar-ops-portal :is(a, button, [role="button"])[class*="bg-[#B7D1EA]"]:hover,
+body.solar-ops-portal :is(a, button, [role="button"])[class*="bg-windbreeze"]:hover {
+  background-color: var(--solar-ops-green-hover) !important;
+}
+
+.solar-ops [class*="text-[#B7D1EA]"],
+body.solar-ops-portal [class*="text-[#B7D1EA]"] {
+  color: var(--solar-ops-blue) !important;
+}
+
+.solar-ops [class*="border-[#B7D1EA]"],
+body.solar-ops-portal [class*="border-[#B7D1EA]"] {
+  border-color: var(--solar-ops-blue) !important;
+}
+
+/* Normalize the handful of legacy status utilities into one semantic vocabulary. */
+.solar-ops :is([class*="bg-emerald-50"], [class*="bg-emerald-100"]),
+body.solar-ops-portal :is([class*="bg-emerald-50"], [class*="bg-emerald-100"]) {
+  border-color: rgb(63 185 80 / 0.35) !important;
+  background-color: rgb(35 134 54 / 0.16) !important;
+  color: #3fb950 !important;
+}
+
+.solar-ops :is([class*="bg-blue-50"], [class*="bg-blue-100"], [class*="bg-sky-50"], [class*="bg-sky-100"]),
+body.solar-ops-portal :is([class*="bg-blue-50"], [class*="bg-blue-100"], [class*="bg-sky-50"], [class*="bg-sky-100"]) {
+  border-color: rgb(88 166 255 / 0.35) !important;
+  background-color: rgb(88 166 255 / 0.14) !important;
+  color: var(--solar-ops-blue) !important;
+}
+
+.solar-ops :is([class*="bg-rose-50"], [class*="bg-red-50"]),
+body.solar-ops-portal :is([class*="bg-rose-50"], [class*="bg-red-50"]) {
+  border-color: rgb(248 81 73 / 0.35) !important;
+  background-color: rgb(248 81 73 / 0.14) !important;
+  color: #f85149 !important;
+}
+
+.solar-ops :is([class*="bg-amber-50"], [class*="bg-amber-100"]),
+body.solar-ops-portal :is([class*="bg-amber-50"], [class*="bg-amber-100"]) {
+  border-color: rgb(210 153 34 / 0.35) !important;
+  background-color: rgb(210 153 34 / 0.14) !important;
+  color: var(--solar-ops-yellow) !important;
+}
+
+.solar-ops :is([class*="bg-indigo-600"]),
+body.solar-ops-portal :is([class*="bg-indigo-600"]) {
+  background-color: var(--solar-ops-green) !important;
+}
+
+.solar-ops :is([class*="bg-indigo-600"]):hover,
+body.solar-ops-portal :is([class*="bg-indigo-600"]):hover {
+  background-color: var(--solar-ops-green-hover) !important;
+}
+
+.solar-ops :is([class*="text-indigo-"]),
+body.solar-ops-portal :is([class*="text-indigo-"]) {
+  color: var(--solar-ops-blue) !important;
+}
+
+.solar-ops *,
+body.solar-ops-portal * {
+  scrollbar-color: var(--solar-ops-border) var(--solar-ops-workspace);
+  scrollbar-width: thin;
+}
+
+.solar-ops *::-webkit-scrollbar,
+body.solar-ops-portal *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.solar-ops *::-webkit-scrollbar-track,
+body.solar-ops-portal *::-webkit-scrollbar-track {
+  background: var(--solar-ops-workspace);
+}
+
+.solar-ops *::-webkit-scrollbar-thumb,
+body.solar-ops-portal *::-webkit-scrollbar-thumb {
+  border: 2px solid var(--solar-ops-workspace);
+  border-radius: 999px;
+  background: var(--solar-ops-border);
+}
+
+.solar-ops *::-webkit-scrollbar-thumb:hover,
+body.solar-ops-portal *::-webkit-scrollbar-thumb:hover {
+  background: var(--solar-ops-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solar-ops *,
+  body.solar-ops-portal * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/*
+ * Sales Case Workspace
+ *
+ * CRM case workspaces use the same dark product surface as API settings. Keep
+ * the route-scoped tokens here so the shared admin shell and CRM content use
+ * one visual language without changing their data or route contracts.
+ */
+.solar-ops .sales-workspace {
+  --sales-workspace-bg: var(--solar-ops-workspace);
+  --sales-workspace-surface: var(--solar-ops-surface);
+  --sales-workspace-ink: var(--solar-ops-text);
+  --sales-workspace-body: var(--solar-ops-body);
+  --sales-workspace-muted: var(--solar-ops-muted);
+  --sales-workspace-border: var(--solar-ops-border);
+  --sales-workspace-accent: var(--solar-ops-blue);
+  --sales-workspace-accent-soft: rgb(88 166 255 / 0.14);
+  --sales-workspace-success: var(--solar-ops-green);
+  --sales-workspace-warning: var(--solar-ops-yellow);
+  min-height: 100%;
+  background: var(--sales-workspace-bg) !important;
+  color: var(--sales-workspace-body) !important;
+  color-scheme: dark;
+  font-family: var(--font-noto-sans-thai), var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+}
+
+.solar-ops .sales-workspace :is(.bg-white, .bg-slate-50, .bg-slate-100) {
+  background-color: var(--sales-workspace-surface) !important;
+}
+
+.solar-ops .sales-workspace .bg-slate-50 {
+  background-color: var(--solar-ops-hover) !important;
+}
+
+.solar-ops .sales-workspace .bg-slate-100 {
+  background-color: var(--solar-ops-hover) !important;
+}
+
+.solar-ops .sales-workspace :is(.text-slate-950, .text-slate-900) {
+  color: var(--sales-workspace-ink) !important;
+}
+
+.solar-ops .sales-workspace :is(.text-slate-800, .text-slate-700) {
+  color: var(--sales-workspace-body) !important;
+}
+
+.solar-ops .sales-workspace :is(.text-slate-600, .text-slate-500, .text-slate-400) {
+  color: var(--sales-workspace-muted) !important;
+}
+
+.solar-ops .sales-workspace :is(.border-slate-200, .border-slate-300) {
+  border-color: var(--sales-workspace-border) !important;
+}
+
+.solar-ops .sales-workspace input,
+.solar-ops .sales-workspace select,
+.solar-ops .sales-workspace textarea {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solar-ops .sales-workspace *,
+  .solar-ops .sales-workspace *::before,
+  .solar-ops .sales-workspace *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Operations keeps its dark palette, but shares the customer contract's
+   geometry: one-pixel edges, rounded controls, quiet depth, and the same
+   focus affordance. This prevents admin-only primitives from drifting into
+   a second shape language. */
+
+.solar-ops [data-bagui="card"],
+body.solar-ops-portal [data-bagui="card"] {
+  border-width: 1px !important;
+  border-color: var(--solar-ops-border) !important;
+  border-radius: 1rem !important;
+  background: var(--solar-ops-surface) !important;
+  box-shadow: 0 14px 34px -24px rgb(0 0 0 / 0.64) !important;
+}
+
+.solar-ops [data-bagui="button"],
+body.solar-ops-portal [data-bagui="button"] {
+  border-width: 1px !important;
+  border-radius: 999px !important;
+  border-color: var(--solar-ops-border) !important;
+  box-shadow: 0 10px 24px -18px rgb(0 0 0 / 0.72) !important;
+}
+
+.solar-ops [data-bagui="button"]:hover:not(:disabled),
+body.solar-ops-portal [data-bagui="button"]:hover:not(:disabled) {
+  border-color: var(--solar-ops-border-strong) !important;
+  box-shadow: 0 14px 30px -18px rgb(0 0 0 / 0.82) !important;
+  transform: translateY(-1px);
+}
+
+.solar-ops [data-bagui="input"],
+.solar-ops [data-bagui="textarea"],
+body.solar-ops-portal [data-bagui="input"],
+body.solar-ops-portal [data-bagui="textarea"] {
+  border-width: 1px !important;
+  border-radius: 0.75rem !important;
+  border-color: var(--solar-ops-border) !important;
+  background: var(--solar-ops-workspace) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solar-ops [data-bagui="button"],
+  body.solar-ops-portal [data-bagui="button"] {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* CRM surfaces use the same dark/content side of GitHub's settings pattern as
+   API settings. The detail route is deliberately scoped so unrelated admin
+   screens can migrate without inheriting these colors. */
+.solar-ops .admin-crm-workbench,
+.solar-ops .sales-workspace {
+  --crm-canvas: var(--solar-ops-workspace);
+  --crm-surface: var(--solar-ops-surface);
+  --crm-subtle: var(--solar-ops-hover);
+  --crm-ink: var(--solar-ops-text);
+  --crm-body: var(--solar-ops-body);
+  --crm-muted: var(--solar-ops-muted);
+  --crm-border: var(--solar-ops-border);
+  --crm-border-subtle: rgb(139 148 158 / 0.18);
+  --crm-link: var(--solar-ops-blue);
+  --crm-success: var(--solar-ops-green-bright);
+  --crm-warning: var(--solar-ops-yellow);
+  --crm-danger: var(--solar-ops-red);
+  background: var(--crm-canvas) !important;
+  color: var(--crm-body) !important;
+  color-scheme: dark;
+}
+
+.solar-ops .admin-crm-workbench :is(.admin-crm-surface, [data-bagui="sales-workspace-card"], [data-bagui="crm-metric-strip"], [data-bagui="crm-workflow"]),
+.solar-ops .sales-workspace :is(.admin-crm-surface, [data-bagui="sales-workspace-card"], [data-bagui="crm-metric-strip"], [data-bagui="crm-workflow"]) {
+  border-color: var(--crm-border) !important;
+  background: var(--crm-surface) !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.24) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="bg-[#0d1117]"], [class*="bg-[#0B1121]"]),
+.solar-ops .sales-workspace :is([class*="bg-[#0d1117]"], [class*="bg-[#0B1121]"]) {
+  background-color: var(--solar-ops-workspace) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="bg-[#0F172A]"], [class*="bg-[#21262d]"]),
+.solar-ops .sales-workspace :is([class*="bg-[#0F172A]"], [class*="bg-[#21262d]"]) {
+  background-color: var(--crm-subtle) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="bg-[#161b22]"], [class*="bg-[#141B2D]"]),
+.solar-ops .sales-workspace :is([class*="bg-[#161b22]"], [class*="bg-[#141B2D]"]) {
+  background-color: var(--crm-surface) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="border-[#30363d]"], [class*="border-[#1E293B"]]),
+.solar-ops .sales-workspace :is([class*="border-[#30363d]"], [class*="border-[#1E293B"]]) {
+  border-color: var(--crm-border) !important;
+}
+
+.solar-ops .admin-crm-workbench [class*="text-[#f0f6fc]"],
+.solar-ops .sales-workspace [class*="text-[#f0f6fc]"] {
+  color: var(--crm-ink) !important;
+}
+
+.solar-ops .admin-crm-workbench [class*="text-[#c9d1d9]"],
+.solar-ops .sales-workspace [class*="text-[#c9d1d9]"] {
+  color: var(--crm-body) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-[#8b949e]"], [class*="text-[#6e7681]"], [class*="text-[#484f58"]]),
+.solar-ops .sales-workspace :is([class*="text-[#8b949e]"], [class*="text-[#6e7681]"], [class*="text-[#484f58"]]) {
+  color: var(--crm-muted) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-[#58a6ff]"], [class*="text-[#B7D1EA]"]),
+.solar-ops .sales-workspace :is([class*="text-[#58a6ff]"], [class*="text-[#B7D1EA]"]) {
+  color: var(--crm-link) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-[#3fb950]"], [class*="text-[#238636"]]),
+.solar-ops .sales-workspace :is([class*="text-[#3fb950]"], [class*="text-[#238636]"]) {
+  color: var(--crm-success) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="bg-[#388bfd]"], [class*="bg-[#58a6ff]"]),
+.solar-ops .sales-workspace :is([class*="bg-[#388bfd]"], [class*="bg-[#58a6ff]"]) {
+  background-color: rgb(88 166 255 / 0.14) !important;
+}
+
+.solar-ops .admin-crm-workbench :is(input, select, textarea),
+.solar-ops .sales-workspace :is(input, select, textarea) {
+  border-color: var(--crm-border) !important;
+  background-color: var(--crm-surface) !important;
+  color: var(--crm-ink) !important;
+  color-scheme: dark;
+}
+
+.solar-ops .admin-crm-workbench :is(input, select, textarea)::placeholder,
+.solar-ops .sales-workspace :is(input, select, textarea)::placeholder {
+  color: var(--crm-muted) !important;
+}
+
+.solar-ops .admin-crm-workbench :is(input, select, textarea):focus,
+.solar-ops .sales-workspace :is(input, select, textarea):focus {
+  border-color: var(--crm-link) !important;
+  box-shadow: 0 0 0 1px var(--crm-link) !important;
+}
+
+.solar-ops .admin-crm-workbench [data-bagui="crm-tabs"] button,
+.solar-ops .sales-workspace [data-bagui="crm-tabs"] button {
+  min-height: 2.75rem;
+}
+
+@media (max-width: 639px) {
+  .solar-ops .admin-crm-workbench .crm-workspace-topbar {
+    align-items: flex-start;
+  }
+
+  .solar-ops .admin-crm-workbench .crm-workspace-topbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Standalone CRM index: compact settings-console density and predictable row
+   affordances, including a deliberate horizontal scroll boundary on narrow
+   screens. */
+.solar-ops .admin-crm-list {
+  min-width: 0;
+  color: var(--solar-ops-body);
+}
+
+.solar-ops .admin-crm-list__content {
+  min-width: 0;
+}
+
+.solar-ops .admin-crm-list table {
+  border-collapse: collapse;
+}
+
+.solar-ops .admin-crm-list table thead tr {
+  background: var(--solar-ops-surface);
+}
+
+.solar-ops .admin-crm-list table tbody tr {
+  background: var(--solar-ops-workspace);
+}
+
+.solar-ops .admin-crm-list table tbody tr:hover {
+  background: var(--solar-ops-surface);
+}
+
+.solar-ops .admin-crm-list table :is(th, td) {
+  border-color: var(--solar-ops-border);
+}
+
+.solar-ops .admin-crm-list .admin-crm-filter-bar .relative > button {
+  min-height: 2.5rem;
+  border-radius: 0.375rem;
+  border-color: var(--solar-ops-border);
+  background: var(--solar-ops-workspace);
+  color: var(--solar-ops-body);
+}
+
+.solar-ops .admin-crm-list .admin-crm-filter-bar .relative > button:hover {
+  border-color: var(--solar-ops-border-strong);
+  color: var(--solar-ops-text);
+}
+
+@media (max-width: 639px) {
+  .solar-ops .admin-crm-list .admin-crm-list__header a {
+    width: 100%;
+  }
+}
+
+/* Keep the CRM case canvas and its migrated subviews on the API settings
+   palette. The explicit attribute selectors cover Tailwind opacity utilities
+   such as border-slate-200/90 that do not match a plain class selector. */
+.solar-ops .admin-crm-workbench :is([class*="bg-white"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-gray-50"], [class*="bg-gray-100"]),
+.solar-ops .sales-workspace :is([class*="bg-white"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-gray-50"], [class*="bg-gray-100"]) {
+  background-color: var(--solar-ops-surface) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-gray-50"], [class*="bg-gray-100"]),
+.solar-ops .sales-workspace :is([class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-gray-50"], [class*="bg-gray-100"]) {
+  background-color: var(--solar-ops-hover) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="border-slate-200"], [class*="border-slate-300"], [class*="border-gray-200"], [class*="border-gray-300"]),
+.solar-ops .sales-workspace :is([class*="border-slate-200"], [class*="border-slate-300"], [class*="border-gray-200"], [class*="border-gray-300"]) {
+  border-color: var(--solar-ops-border) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-slate-950"], [class*="text-slate-900"], [class*="text-gray-950"], [class*="text-gray-900"]),
+.solar-ops .sales-workspace :is([class*="text-slate-950"], [class*="text-slate-900"], [class*="text-gray-950"], [class*="text-gray-900"]) {
+  color: var(--solar-ops-text) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-slate-800"], [class*="text-slate-700"], [class*="text-gray-800"], [class*="text-gray-700"]),
+.solar-ops .sales-workspace :is([class*="text-slate-800"], [class*="text-slate-700"], [class*="text-gray-800"], [class*="text-gray-700"]) {
+  color: var(--solar-ops-body) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-slate-600"], [class*="text-slate-500"], [class*="text-slate-400"], [class*="text-gray-600"], [class*="text-gray-500"], [class*="text-gray-400"]),
+.solar-ops .sales-workspace :is([class*="text-slate-600"], [class*="text-slate-500"], [class*="text-slate-400"], [class*="text-gray-600"], [class*="text-gray-500"], [class*="text-gray-400"]) {
+  color: var(--solar-ops-muted) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="bg-sky-700"], [class*="bg-blue-700"]),
+.solar-ops .sales-workspace :is([class*="bg-sky-700"], [class*="bg-blue-700"]) {
+  background-color: var(--solar-ops-green) !important;
+  color: #ffffff !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="bg-sky-700"], [class*="bg-blue-700"]):hover,
+.solar-ops .sales-workspace :is([class*="bg-sky-700"], [class*="bg-blue-700"]):hover {
+  background-color: var(--solar-ops-green-hover) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-sky-800"], [class*="text-sky-700"], [class*="text-blue-800"], [class*="text-blue-700"]),
+.solar-ops .sales-workspace :is([class*="text-sky-800"], [class*="text-sky-700"], [class*="text-blue-800"], [class*="text-blue-700"]) {
+  color: var(--solar-ops-blue) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-emerald-800"], [class*="text-emerald-700"]),
+.solar-ops .sales-workspace :is([class*="text-emerald-800"], [class*="text-emerald-700"]) {
+  color: var(--solar-ops-green-bright) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-amber-900"], [class*="text-amber-800"]),
+.solar-ops .sales-workspace :is([class*="text-amber-900"], [class*="text-amber-800"]) {
+  color: var(--solar-ops-yellow) !important;
+}
+
+.solar-ops .admin-crm-workbench :is([class*="text-rose-800"], [class*="text-rose-700"]),
+.solar-ops .sales-workspace :is([class*="text-rose-800"], [class*="text-rose-700"]) {
+  color: var(--solar-ops-red) !important;
+}
+
+.solar-ops .admin-crm-workbench,
+.solar-ops .sales-workspace {
+  background: var(--solar-ops-workspace) !important;
+  color: var(--solar-ops-body) !important;
+  color-scheme: dark;
+}
+
+/* Ensure admin console buttons maintain GitHub dark product theme */
+.solar-ops [data-bagui="button"],
+body.solar-ops-portal [data-bagui="button"] {
+  border-radius: 0.5rem !important;
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  letter-spacing: normal !important;
+}
+
+.solar-ops [data-bagui="button"][data-button-variant="primary"],
+body.solar-ops-portal [data-bagui="button"][data-button-variant="primary"] {
+  background-color: var(--solar-ops-green) !important;
+  color: #ffffff !important;
+  border-color: rgba(240, 246, 252, 0.1) !important;
+  box-shadow: 0 1px 0 rgba(27, 31, 36, 0.1) !important;
+}
+
+.solar-ops [data-bagui="button"][data-button-variant="primary"]:hover,
+body.solar-ops-portal [data-bagui="button"][data-button-variant="primary"]:hover {
+  background-color: var(--solar-ops-green-hover) !important;
+  transform: none !important;
+  box-shadow: 0 1px 0 rgba(27, 31, 36, 0.1) !important;
+}
+
+.solar-ops [data-bagui="button"][data-button-variant="outline"],
+body.solar-ops-portal [data-bagui="button"][data-button-variant="outline"],
+.solar-ops [data-bagui="button"][data-button-variant="secondary"],
+body.solar-ops-portal [data-bagui="button"][data-button-variant="secondary"] {
+  background-color: var(--solar-ops-surface) !important;
+  color: var(--solar-ops-text) !important;
+  border: 1px solid var(--solar-ops-border) !important;
+}
+
+.solar-ops [data-bagui="button"][data-button-variant="outline"]:hover,
+body.solar-ops-portal [data-bagui="button"][data-button-variant="outline"]:hover,
+.solar-ops [data-bagui="button"][data-button-variant="secondary"]:hover,
+body.solar-ops-portal [data-bagui="button"][data-button-variant="secondary"]:hover {
+  background-color: var(--solar-ops-hover) !important;
+  transform: none !important;
+}

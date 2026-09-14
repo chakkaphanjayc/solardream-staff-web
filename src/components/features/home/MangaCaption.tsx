@@ -1,0 +1,1 @@
+export { MangaCaption } from "./MangaPanel";

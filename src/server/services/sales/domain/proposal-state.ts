@@ -1,0 +1,4 @@
+import type { ProposalState, ProposalTransitionContext } from "@/types/sales-v2";
+const transitions: Record<ProposalState, readonly ProposalState[]> = { DRAFT:["ISSUED","VOIDED"], ISSUED:["VIEWED","ACCEPTED","DECLINED","EXPIRED","VOIDED"], VIEWED:["ACCEPTED","DECLINED","EXPIRED","VOIDED"], ACCEPTED:[], DECLINED:[], EXPIRED:[], VOIDED:[] };
+export function canTransitionProposal(from: ProposalState,to: ProposalState,c: ProposalTransitionContext={}):boolean { return transitions[from].includes(to) && (to!=="ISSUED" || !!c.hasRevision) && (to!=="ACCEPTED" || !!c.signatureVerified); }
+export function assertProposalTransition(from:ProposalState,to:ProposalState,c?:ProposalTransitionContext):void { if(!canTransitionProposal(from,to,c)) throw new Error(`Invalid proposal transition: ${from} -> ${to}`); }

@@ -1,0 +1,4 @@
+import type { PaymentState, PaymentTransitionContext } from "@/types/sales-v2";
+const transitions:Record<PaymentState,readonly PaymentState[]>={DRAFT:["PENDING","CANCELLED"],PENDING:["PARTIALLY_PAID","PAID","OVERDUE","CANCELLED"],PARTIALLY_PAID:["PAID","OVERDUE","CANCELLED"],OVERDUE:["PARTIALLY_PAID","PAID","CANCELLED"],PAID:[],CANCELLED:[]};
+export function canTransitionPayment(from:PaymentState,to:PaymentState,c:PaymentTransitionContext={}):boolean { if(!transitions[from].includes(to))return false; if(to==="PAID")return c.totalAmount!==undefined&&c.paidAmount!==undefined&&c.paidAmount>=c.totalAmount; if(to==="PARTIALLY_PAID")return (c.paidAmount??0)>0&&(c.totalAmount===undefined||(c.paidAmount??0)<c.totalAmount); return true; }
+export function assertPaymentTransition(from:PaymentState,to:PaymentState,c?:PaymentTransitionContext):void {if(!canTransitionPayment(from,to,c))throw new Error(`Invalid payment transition: ${from} -> ${to}`);}
