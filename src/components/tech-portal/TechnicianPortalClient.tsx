@@ -3,7 +3,9 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import SignatureCanvas from "react-signature-canvas";
+import { signOut as signOutAction } from "@/app/actions/auth";
 import {
   ArrowRight,
   CalendarDays,
@@ -18,9 +20,11 @@ import {
   ExternalLink,
   FileCheck2,
   FileText,
+  HardDrive,
   HardHat,
   Loader2,
   LockKeyhole,
+  LogOut,
   MapPin,
   Navigation,
   Phone,
@@ -40,14 +44,19 @@ import {
   enqueueTechOperation,
   getCachedTechnicianDashboard,
   getTechOfflineSummary,
+  getTechStorageStatus,
   getPendingTechHandoverTaskIds,
   getTechTaskDraft,
   retryTechConflicts,
   saveTechTaskDraft,
+  setTechPortalActiveActor,
   syncTechOutbox,
+  TechOfflineStorageError,
   updateCachedTechnicianTask,
   type TechOfflineSummary,
+  type TechStorageStatus,
 } from "@/lib/techPortalOffline";
+import { createClient } from "@/utils/supabase/client";
 import {
   LEGACY_TECH_PORTAL_PHASES,
   TECH_PORTAL_PHASES,
@@ -79,6 +88,12 @@ type Copy = {
   syncInProgress: string;
   syncFailed: string;
   syncConflict: string;
+  storageNearFull: string;
+  storageFull: string;
+  signOut: string;
+  signOutPending: string;
+  signOutWarning: string;
+  signOutFailed: string;
   erpSync: string;
   erpSyncPending: string;
   erpSyncInProgress: string;
@@ -217,6 +232,12 @@ const EN_COPY: Copy = {
   syncInProgress: "Syncing field records…",
   syncFailed: "Some records need attention before they can sync.",
   syncConflict: "A server conflict needs review.",
+  storageNearFull: "Device storage is nearly full. Sync confirmed work or free space before capturing more photos.",
+  storageFull: "Device storage is full for this evidence file. Sync pending work or free device storage, then try again.",
+  signOut: "Sign out",
+  signOutPending: "Signing out…",
+  signOutWarning: "There is technician work that has not been fully synchronized. Sign out and keep it on this device for the same technician to resume later?",
+  signOutFailed: "The session could not be closed. Your offline work remains on this device.",
   erpSync: "ERPNext connection",
   erpSyncPending: "Queued for ERPNext",
   erpSyncInProgress: "Sending to ERPNext",
@@ -376,6 +397,12 @@ const TH_COPY: Copy = {
   syncInProgress: "กำลังซิงค์ข้อมูลหน้างาน…",
   syncFailed: "มีรายการที่ต้องตรวจสอบก่อนซิงค์ต่อ",
   syncConflict: "มีข้อมูลขัดแย้งกับเซิร์ฟเวอร์ กรุณาตรวจสอบ",
+  storageNearFull: "พื้นที่จัดเก็บในอุปกรณ์ใกล้เต็ม ซิงค์งานที่ยืนยันแล้วหรือลบไฟล์ที่ไม่ใช้ก่อนถ่ายรูปเพิ่ม",
+  storageFull: "พื้นที่ในอุปกรณ์ไม่พอสำหรับไฟล์หลักฐานนี้ ซิงค์งานค้างหรือลดการใช้พื้นที่แล้วลองใหม่",
+  signOut: "ออกจากระบบ",
+  signOutPending: "กำลังออกจากระบบ…",
+  signOutWarning: "มีงานช่างที่ยังซิงค์ไม่ครบ ต้องการออกจากระบบและเก็บงานไว้ในอุปกรณ์เพื่อให้ช่างคนเดิมกลับมาซิงค์ภายหลังหรือไม่",
+  signOutFailed: "ปิดเซสชันไม่ได้ งานออฟไลน์ยังคงเก็บไว้ในอุปกรณ์",
   retryConflicts: "รีเฟรชแล้วลองซิงค์อีกครั้ง",
   capturedOffline: "บันทึกไว้ในอุปกรณ์แล้ว จะซิงค์เมื่อกลับมาออนไลน์",
   handoverPending: "บันทึกลายเซ็นไว้ในอุปกรณ์แล้ว ระบบจะซีลใบรับรองหลังซิงค์",
@@ -692,6 +719,15 @@ function getServerOnlineStatus() {
   return true;
 }
 
+async function getBrowserSessionUserId(supabase: ReturnType<typeof createClient>) {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function StatusChip({ tone, children }: { tone: "success" | "warning" | "info" | "neutral"; children: ReactNode }) {
   return (
     <span
@@ -821,6 +857,8 @@ function LoadingShell({ copy }: { copy: Copy }) {
 
 export default function TechnicianPortalClient({ locale, assetCaptureEnabled = false }: { locale: string; assetCaptureEnabled?: boolean }) {
   const copy = useMemo(() => (locale === "th" ? TH_COPY : EN_COPY), [locale]);
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [dashboard, setDashboard] = useState<TechDashboardResponse | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedPhaseByTask, setSelectedPhaseByTask] = useState<Record<string, TechPortalPhaseCode>>({});
@@ -847,6 +885,8 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
     pendingErp: 0,
   });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [storageStatus, setStorageStatus] = useState<TechStorageStatus | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [pendingHandoverByTask, setPendingHandoverByTask] = useState<Record<string, boolean>>({});
   const signatureRef = useRef<SignatureCanvas | null>(null);
   const handoverRef = useRef<HTMLElement | null>(null);
@@ -909,8 +949,10 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
     setAuthRequired(false);
     setAccessDenied(false);
     try {
+      const currentActorUserId = await getBrowserSessionUserId(supabase);
+      await setTechPortalActiveActor(currentActorUserId);
       if (!isOnline) {
-        const cached = await getCachedTechnicianDashboard();
+        const cached = await getCachedTechnicianDashboard(currentActorUserId);
         if (!cached) throw new PortalRequestError(copy.networkError, 503);
         await applyDashboardPayload({ success: true, ...cached });
         return;
@@ -940,7 +982,7 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
         setDashboard(null);
         setError(null);
       } else {
-        const cached = await getCachedTechnicianDashboard().catch(() => null);
+        const cached = await getCachedTechnicianDashboard(await getBrowserSessionUserId(supabase)).catch(() => null);
         if (cached) {
           await applyDashboardPayload({ success: true, ...cached });
         } else {
@@ -950,11 +992,32 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
     } finally {
       setIsLoading(false);
     }
-  }, [applyDashboardPayload, copy.networkError, isOnline]);
+  }, [applyDashboardPayload, copy.networkError, isOnline, supabase]);
 
   const refreshSyncSummary = useCallback(async () => {
-    setSyncSummary(await getTechOfflineSummary());
+    const [summary, storage] = await Promise.all([getTechOfflineSummary(), getTechStorageStatus()]);
+    setSyncSummary(summary);
+    setStorageStatus(storage);
   }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    const applyActor = (actorUserId: string | null) => {
+      void setTechPortalActiveActor(actorUserId).then(() => {
+        if (!disposed) void refreshSyncSummary();
+      });
+    };
+    void supabase.auth.getSession()
+      .then(({ data }) => applyActor(data.session?.user.id ?? null))
+      .catch(() => applyActor(null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyActor(session?.user.id ?? null);
+    });
+    return () => {
+      disposed = true;
+      subscription.unsubscribe();
+    };
+  }, [refreshSyncSummary, supabase]);
 
   const syncNow = useCallback(async (options: { forceRetry?: boolean } = {}) => {
     if (!isOnline || syncInFlightRef.current || isReadOnly) return;
@@ -983,6 +1046,35 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
     await refreshSyncSummary();
     await syncNow({ forceRetry: true });
   }, [isOnline, isReadOnly, loadDashboard, refreshSyncSummary, syncNow]);
+
+  const handleSignOut = useCallback(async () => {
+    const summary = await getTechOfflineSummary();
+    const unsyncedCount = summary.pending
+      + summary.pendingAuth
+      + summary.syncing
+      + summary.failed
+      + summary.conflicts
+      + summary.rejected
+      + summary.pendingServer
+      + summary.pendingErp;
+    if (unsyncedCount > 0 && !window.confirm(copy.signOutWarning)) return;
+
+    setIsSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      const result = await signOutAction();
+      if ("error" in result) {
+        setNotice({ tone: "error", message: copy.signOutFailed });
+        return;
+      }
+      await setTechPortalActiveActor(null);
+      router.replace(`/${locale}/login`);
+    } catch {
+      setNotice({ tone: "error", message: copy.signOutFailed });
+    } finally {
+      setIsSigningOut(false);
+    }
+  }, [copy.signOutFailed, copy.signOutWarning, locale, router, supabase]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadDashboard(), 0);
@@ -1165,9 +1257,11 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
       updateNotice("success", copy.preflightComplete);
       await refreshAfterMutation();
     } catch (requestError: unknown) {
-      updateNotice("error", requestError instanceof PortalRequestError
-        ? requestError.message
-        : getLocationError(requestError, copy));
+      updateNotice("error", requestError instanceof TechOfflineStorageError
+        ? copy.storageFull
+        : requestError instanceof PortalRequestError
+          ? requestError.message
+          : getLocationError(requestError, copy));
     } finally {
       setBusyAction(null);
     }
@@ -1261,9 +1355,11 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
       updateNotice("success", copy.gpsCaptured);
       await refreshAfterMutation();
     } catch (requestError: unknown) {
-      updateNotice("error", requestError instanceof PortalRequestError
-        ? requestError.message
-        : getLocationError(requestError, copy));
+      updateNotice("error", requestError instanceof TechOfflineStorageError
+        ? copy.storageFull
+        : requestError instanceof PortalRequestError
+          ? requestError.message
+          : getLocationError(requestError, copy));
     } finally {
       setBusyAction(null);
       setBusyPhase(null);
@@ -1535,6 +1631,16 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
             <PwaInstallControl copy={copy} />
             <button
               type="button"
+              onClick={() => void handleSignOut()}
+              disabled={isSigningOut}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 px-3 text-xs font-bold text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={copy.signOut}
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">{isSigningOut ? copy.signOutPending : copy.signOut}</span>
+            </button>
+            <button
+              type="button"
               onClick={() => void loadDashboard()}
               disabled={isLoading}
               className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA] disabled:cursor-not-allowed disabled:opacity-50"
@@ -1569,6 +1675,21 @@ export default function TechnicianPortalClient({ locale, assetCaptureEnabled = f
             </div>
             {isOnline && !isSyncing && syncSummary.conflicts > 0 ? <button type="button" onClick={() => void handleRetryConflicts()} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-3 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2"><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{copy.retryConflicts}</button> : null}
             {isOnline && !isSyncing && syncSummary.conflicts === 0 && syncSummary.pendingAuth === 0 && (syncSummary.pending > 0 || syncSummary.failed > 0) ? <button type="button" onClick={() => void syncNow({ forceRetry: true })} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-3 text-xs font-extrabold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2"><RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{copy.syncNow}</button> : null}
+          </div>
+        ) : null}
+
+        {storageStatus?.warning !== undefined && storageStatus.warning !== "NONE" ? (
+          <div
+            className={cn(
+              "mb-5 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm",
+              storageStatus.warning === "FULL"
+                ? "border-rose-200 bg-rose-50 text-rose-900"
+                : "border-[#D8A87B]/60 bg-[#F1D6B8]/55 text-[#68411f]",
+            )}
+            role="alert"
+          >
+            <HardDrive className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p>{storageStatus.warning === "FULL" ? copy.storageFull : copy.storageNearFull}</p>
           </div>
         ) : null}
 

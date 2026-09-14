@@ -45,6 +45,18 @@ final URLs before caching. Login redirects, HTML error pages, opaque responses,
 and known Zero Trust challenge responses are never written to the shell cache.
 Next deployment chunks and private API responses remain outside the cache.
 
+The client requests persistent browser storage when available and checks the
+storage estimate before saving a new evidence blob. Near-full and full-device
+conditions are visible in the portal. Once an evidence upload receives a
+server acknowledgement and an evidence ID, its local blob is released; an
+unacknowledged blob is retained for retry.
+
+Outbox rows are scoped to the authenticated technician. Switching accounts
+does not clear another technician's pending commands or blobs, and those rows
+are not replayed under the new identity. The portal's sign-out action warns
+when work is still pending and preserves it for the original technician to
+resume after signing in again.
+
 ## Recovery checklist
 
 1. Keep the device online and sign in with the same installer account.

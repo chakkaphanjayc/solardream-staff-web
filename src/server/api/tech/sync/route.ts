@@ -62,6 +62,8 @@ const evidenceSyncPayloadSchema = z.object({
   phase: techPhaseSchema,
   gps: technicianGpsSchema,
   capturedAt: z.string().trim().min(1).max(80).refine((value) => Number.isFinite(Date.parse(value)), "A valid capture timestamp is required."),
+  localEvidenceId: z.string().trim().min(8).max(160).optional(),
+  clientSha256: z.string().trim().min(1).max(128).optional(),
 });
 
 const assetSyncPayloadSchema = z.object({
@@ -104,6 +106,9 @@ function assertIdempotencyHeader(request: NextRequest, envelope: ReturnType<type
   if (envelope.idempotencyKey && envelope.idempotencyKey !== envelope.operationId) {
     throw new TechSyncValidationError("The sync command contains conflicting idempotency keys.");
   }
+  if (envelope.commandId && envelope.commandId !== envelope.operationId) {
+    throw new TechSyncValidationError("The command ID does not match the idempotency key.");
+  }
   if (envelope.commandType && envelope.commandType !== envelope.type) {
     throw new TechSyncValidationError("The sync command type does not match its operation type.");
   }
@@ -119,13 +124,16 @@ function canonicalizeCommandValue(value: unknown): unknown {
   return value;
 }
 
-function getCommandFingerprint(envelope: ReturnType<typeof parseEnvelope>, file: File | null) {
+async function getCommandFingerprint(envelope: ReturnType<typeof parseEnvelope>, file: File | null) {
+  const fileSha256 = file
+    ? createHash("sha256").update(Buffer.from(await file.arrayBuffer())).digest("hex")
+    : null;
   const value = {
     type: envelope.type,
     taskId: envelope.taskId,
     fieldVisitId: envelope.fieldVisitId || null,
     payload: envelope.payload,
-    ...(file ? { file: { name: file.name, size: file.size, type: file.type } } : {}),
+    ...(file ? { file: { name: file.name, size: file.size, type: file.type, sha256: fileSha256 } } : {}),
   };
   return createHash("sha256").update(JSON.stringify(canonicalizeCommandValue(value))).digest("hex");
 }
@@ -171,6 +179,18 @@ async function getAccess(taskId: string, statuses: readonly string[], fieldVisit
   return accessResult.access;
 }
 
+function assertCommandActor(expectedActorUserId: string | null | undefined, actualActorUserId: string) {
+  if (expectedActorUserId && expectedActorUserId !== actualActorUserId) {
+    throw Object.assign(new Error("This offline command belongs to a different technician account."), { status: 409 });
+  }
+}
+
+async function getAccessForCommand(taskId: string, statuses: readonly string[], fieldVisitId: string | null | undefined, expectedActorUserId: string | null | undefined) {
+  const access = await getAccess(taskId, statuses, fieldVisitId);
+  assertCommandActor(expectedActorUserId, access.actor.userId);
+  return access;
+}
+
 export async function POST(request: NextRequest) {
   const isMultipart = request.headers.get("content-type")?.toLowerCase().includes("multipart/form-data") === true;
   if (isMultipart) {
@@ -199,7 +219,7 @@ export async function POST(request: NextRequest) {
       envelope = parseEnvelope(await request.json().catch(() => null));
     }
     assertIdempotencyHeader(request, envelope);
-    const commandFingerprint = getCommandFingerprint(envelope, file);
+    const commandFingerprint = await getCommandFingerprint(envelope, file);
 
     if (envelope.type === "ASSET_REGISTERED") {
       const fieldFeatureResponse = await requireOpsV2Feature("OPS_V2_FIELD");
@@ -216,7 +236,7 @@ export async function POST(request: NextRequest) {
         source: "PWA_OFFLINE",
       });
       if (!parsed.success) return NextResponse.json({ success: false, error: "The offline start-job payload is invalid." }, { status: 400 });
-      const access = await getAccess(envelope.taskId, ["OPEN", "IN_PROGRESS"], envelope.fieldVisitId);
+      const access = await getAccessForCommand(envelope.taskId, ["OPEN", "IN_PROGRESS"], envelope.fieldVisitId, envelope.actorUserId);
       const result = await startTechnicianJob({
         access,
         checks: parsed.data.checks,
@@ -233,7 +253,13 @@ export async function POST(request: NextRequest) {
       if (!file) return NextResponse.json({ success: false, error: "An offline QC image is required." }, { status: 400 });
       const parsed = evidenceSyncPayloadSchema.safeParse({ ...asRecord(envelope.payload), taskId: envelope.taskId });
       if (!parsed.success) return NextResponse.json({ success: false, error: "The offline QC evidence payload is invalid." }, { status: 400 });
-      const access = await getAccess(envelope.taskId, ["IN_PROGRESS"], envelope.fieldVisitId);
+      if (parsed.data.clientSha256 && /^[0-9a-f]{64}$/i.test(parsed.data.clientSha256)) {
+        const actualSha256 = createHash("sha256").update(Buffer.from(await file.arrayBuffer())).digest("hex");
+        if (parsed.data.clientSha256.toLowerCase() !== actualSha256) {
+          return NextResponse.json({ success: false, error: "The offline QC image checksum does not match its payload." }, { status: 409 });
+        }
+      }
+      const access = await getAccessForCommand(envelope.taskId, ["IN_PROGRESS"], envelope.fieldVisitId, envelope.actorUserId);
       const result = await uploadTechnicianEvidence({
         access,
         phase: parsed.data.phase,
@@ -254,7 +280,7 @@ export async function POST(request: NextRequest) {
         source: "PWA_OFFLINE",
       });
       if (!parsed.success) return NextResponse.json({ success: false, error: "The offline QC completion payload is invalid." }, { status: 400 });
-      const access = await getAccess(envelope.taskId, ["IN_PROGRESS"], envelope.fieldVisitId);
+      const access = await getAccessForCommand(envelope.taskId, ["IN_PROGRESS"], envelope.fieldVisitId, envelope.actorUserId);
       const result = await completeTechnicianQc({
         access,
         phase: parsed.data.phase,
@@ -273,7 +299,7 @@ export async function POST(request: NextRequest) {
         taskId: envelope.taskId,
       });
       if (!parsed.success) return NextResponse.json({ success: false, error: "The offline asset payload is invalid." }, { status: 400 });
-      const access = await getAccess(envelope.taskId, ["IN_PROGRESS", "COMPLETED"], envelope.fieldVisitId);
+      const access = await getAccessForCommand(envelope.taskId, ["IN_PROGRESS", "COMPLETED"], envelope.fieldVisitId, envelope.actorUserId);
       if (parsed.data.projectId !== access.project.id) {
         return NextResponse.json({ success: false, error: "The asset project does not match the assigned visit." }, { status: 409 });
       }
@@ -293,7 +319,7 @@ export async function POST(request: NextRequest) {
       source: "PWA_OFFLINE",
     });
     if (!parsed.success) return NextResponse.json({ success: false, error: "The offline handover payload is invalid." }, { status: 400 });
-    const access = await getAccess(envelope.taskId, ["IN_PROGRESS", "COMPLETED"], envelope.fieldVisitId);
+    const access = await getAccessForCommand(envelope.taskId, ["IN_PROGRESS", "COMPLETED"], envelope.fieldVisitId, envelope.actorUserId);
     const result = await completeTechnicianHandover({
       access,
       signatureBase64: parsed.data.signatureBase64,

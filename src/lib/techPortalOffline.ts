@@ -62,7 +62,7 @@ export type TechOfflineOperation =
         localEvidenceId: string;
         clientSha256: string;
       };
-      file: Blob;
+      file: Blob | null;
       fileName: string;
       contentType: string;
     })
@@ -106,7 +106,7 @@ type TechOfflineOperationMetadataInput = Partial<Pick<
 
 export type TechOfflineOperationInput =
   | (Pick<Extract<TechOfflineOperation, { type: "JOB_STARTED" }>, "type" | "taskId" | "fieldVisitId" | "idempotencyKey" | "payload"> & TechOfflineOperationMetadataInput)
-  | (Pick<Extract<TechOfflineOperation, { type: "QC_EVIDENCE_UPLOADED" }>, "type" | "taskId" | "fieldVisitId" | "idempotencyKey" | "payload" | "file" | "fileName" | "contentType"> & TechOfflineOperationMetadataInput)
+  | (Omit<Pick<Extract<TechOfflineOperation, { type: "QC_EVIDENCE_UPLOADED" }>, "type" | "taskId" | "fieldVisitId" | "idempotencyKey" | "payload" | "file" | "fileName" | "contentType">, "file"> & { file: Blob } & TechOfflineOperationMetadataInput)
   | (Pick<Extract<TechOfflineOperation, { type: "QC_PHASE_COMPLETED" }>, "type" | "taskId" | "fieldVisitId" | "idempotencyKey" | "payload"> & TechOfflineOperationMetadataInput)
   | (Pick<Extract<TechOfflineOperation, { type: "HANDOVER_CAPTURED" }>, "type" | "taskId" | "fieldVisitId" | "idempotencyKey" | "payload"> & TechOfflineOperationMetadataInput)
   | (Pick<Extract<TechOfflineOperation, { type: "ASSET_REGISTERED" }>, "type" | "taskId" | "fieldVisitId" | "idempotencyKey" | "payload"> & TechOfflineOperationMetadataInput);
@@ -153,6 +153,19 @@ export type TechOfflineSummary = {
   pendingErp: number;
 };
 
+export type TechStorageWarning = "NONE" | "NEAR_LIMIT" | "FULL";
+
+export type TechStorageStatus = {
+  supported: boolean;
+  usageBytes: number | null;
+  quotaBytes: number | null;
+  availableBytes: number | null;
+  usageRatio: number | null;
+  persisted: boolean | null;
+  persistSupported: boolean;
+  warning: TechStorageWarning;
+};
+
 const EMPTY_TECH_OFFLINE_SUMMARY: TechOfflineSummary = {
   pending: 0,
   pendingAuth: 0,
@@ -164,6 +177,31 @@ const EMPTY_TECH_OFFLINE_SUMMARY: TechOfflineSummary = {
   pendingServer: 0,
   pendingErp: 0,
 };
+
+const EMPTY_TECH_STORAGE_STATUS: TechStorageStatus = {
+  supported: false,
+  usageBytes: null,
+  quotaBytes: null,
+  availableBytes: null,
+  usageRatio: null,
+  persisted: null,
+  persistSupported: false,
+  warning: "NONE",
+};
+
+const STORAGE_NEAR_LIMIT_RATIO = 0.8;
+const STORAGE_FULL_RATIO = 0.95;
+const STORAGE_HEADROOM_BYTES = 1 * 1024 * 1024;
+const STORAGE_NEAR_LIMIT_BYTES = 5 * 1024 * 1024;
+
+export class TechOfflineStorageError extends Error {
+  readonly code = "QUOTA_EXCEEDED" as const;
+
+  constructor() {
+    super("The device does not have enough local storage for this evidence file. Sync pending work or free device storage, then try again.");
+    this.name = "TechOfflineStorageError";
+  }
+}
 
 function getLegacySyncState(status: TechOutboxStatus): TechSyncState {
   if (status === "SYNCING") return "UPLOADING";
@@ -198,10 +236,16 @@ class TechPortalDatabase extends Dexie {
       drafts: "taskId, updatedAt",
       settings: "key",
     }).upgrade(async (transaction) => {
+      const actorSetting = await transaction.table("settings").get("actorUserId") as TechSetting | undefined;
+      const legacyActorUserId = typeof actorSetting?.value === "string" && actorSetting.value.trim()
+        ? actorSetting.value.trim()
+        : null;
       await transaction.table("outbox").toCollection().modify((operation: TechOfflineOperation) => {
         const legacyStatus = operation.status || "PENDING";
         operation.syncState = operation.syncState || getLegacySyncState(legacyStatus);
-        operation.actorUserId = typeof operation.actorUserId === "string" ? operation.actorUserId : null;
+        operation.actorUserId = typeof operation.actorUserId === "string" && operation.actorUserId.trim()
+          ? operation.actorUserId.trim()
+          : legacyActorUserId;
         operation.deviceId = typeof operation.deviceId === "string" && operation.deviceId.trim() ? operation.deviceId : "legacy-device";
         operation.baseVersion = typeof operation.baseVersion === "string" ? operation.baseVersion : null;
         operation.payloadSchemaVersion = typeof operation.payloadSchemaVersion === "number" ? operation.payloadSchemaVersion : TECH_SYNC_PAYLOAD_SCHEMA_VERSION;
@@ -223,6 +267,68 @@ export const techPortalDb = new TechPortalDatabase();
 
 function storageAvailable() {
   return typeof indexedDB !== "undefined";
+}
+
+function getStorageManager(): StorageManager | null {
+  if (typeof navigator === "undefined" || !("storage" in navigator)) return null;
+  return navigator.storage;
+}
+
+export async function requestTechPersistentStorage() {
+  const storage = getStorageManager();
+  if (!storage || typeof storage.persist !== "function") return false;
+  try {
+    if (typeof storage.persisted === "function" && await storage.persisted()) return true;
+    return await storage.persist();
+  } catch {
+    return false;
+  }
+}
+
+export async function getTechStorageStatus(): Promise<TechStorageStatus> {
+  if (!storageAvailable()) return { ...EMPTY_TECH_STORAGE_STATUS };
+  const storage = getStorageManager();
+  if (!storage || typeof storage.estimate !== "function") return { ...EMPTY_TECH_STORAGE_STATUS };
+
+  try {
+    const estimate = await storage.estimate();
+    const usageBytes = typeof estimate.usage === "number" && Number.isFinite(estimate.usage) ? Math.max(0, estimate.usage) : null;
+    const quotaBytes = typeof estimate.quota === "number" && Number.isFinite(estimate.quota) && estimate.quota > 0 ? estimate.quota : null;
+    const availableBytes = usageBytes !== null && quotaBytes !== null ? Math.max(0, quotaBytes - usageBytes) : null;
+    const usageRatio = usageBytes !== null && quotaBytes !== null ? Math.min(1, Math.max(0, usageBytes / quotaBytes)) : null;
+    const persisted = typeof storage.persisted === "function" ? await storage.persisted().catch(() => null) : null;
+    const warning: TechStorageWarning = availableBytes === 0 || (usageRatio !== null && usageRatio >= STORAGE_FULL_RATIO)
+      ? "FULL"
+      : (availableBytes !== null && availableBytes <= STORAGE_NEAR_LIMIT_BYTES) || (usageRatio !== null && usageRatio >= STORAGE_NEAR_LIMIT_RATIO)
+        ? "NEAR_LIMIT"
+        : "NONE";
+    return {
+      supported: true,
+      usageBytes,
+      quotaBytes,
+      availableBytes,
+      usageRatio,
+      persisted,
+      persistSupported: typeof storage.persist === "function",
+      warning,
+    };
+  } catch {
+    return { ...EMPTY_TECH_STORAGE_STATUS, supported: true, persistSupported: typeof storage.persist === "function" };
+  }
+}
+
+async function ensureTechStorageCapacity(requiredBytes: number) {
+  if (requiredBytes <= 0) return;
+  await requestTechPersistentStorage();
+  const status = await getTechStorageStatus();
+  if (status.availableBytes !== null && status.availableBytes < requiredBytes + STORAGE_HEADROOM_BYTES) {
+    throw new TechOfflineStorageError();
+  }
+}
+
+function isQuotaExceededError(error: unknown) {
+  return error instanceof DOMException && error.name === "QuotaExceededError"
+    || error instanceof Error && /quota|storage space/i.test(error.message);
 }
 
 function makeId(prefix: string) {
@@ -258,6 +364,18 @@ async function getOrCreateDeviceId() {
   return deviceId;
 }
 
+async function getActiveActorUserId() {
+  const active = await techPortalDb.settings.get("activeActorUserId");
+  if (active) return typeof active.value === "string" && active.value.trim() ? active.value.trim() : null;
+  const legacy = await techPortalDb.settings.get("actorUserId");
+  return typeof legacy?.value === "string" && legacy.value.trim() ? legacy.value.trim() : null;
+}
+
+export async function setTechPortalActiveActor(actorUserId: string | null) {
+  if (!storageAvailable()) return;
+  await techPortalDb.settings.put({ key: "activeActorUserId", value: actorUserId?.trim() || "" });
+}
+
 function getDefaultDependencyReferences(operation: TechOfflineOperationInput) {
   if (operation.type === "QC_PHASE_COMPLETED") {
     return operation.payload.evidenceLocalIds.map((localEvidenceId) => `evidence:${localEvidenceId}`);
@@ -272,8 +390,6 @@ export async function cacheTechnicianDashboard(payload: TechDashboardResponse) {
     const currentScope = await techPortalDb.settings.get("cacheScope");
     if (currentScope && currentScope.value !== payload.cacheScope) {
       await techPortalDb.tasks.clear();
-      await techPortalDb.outbox.clear();
-      await techPortalDb.evidenceLinks.clear();
       await techPortalDb.drafts.clear();
     }
     await techPortalDb.tasks.clear();
@@ -285,7 +401,10 @@ export async function cacheTechnicianDashboard(payload: TechDashboardResponse) {
       cachedAt,
     })));
     await techPortalDb.settings.put({ key: "cacheScope", value: payload.cacheScope });
-    if (payload.actorUserId) await techPortalDb.settings.put({ key: "actorUserId", value: payload.actorUserId });
+    if (payload.actorUserId) {
+      await techPortalDb.settings.put({ key: "actorUserId", value: payload.actorUserId });
+      await techPortalDb.settings.put({ key: "activeActorUserId", value: payload.actorUserId });
+    }
     await techPortalDb.settings.put({ key: "dashboardDate", value: payload.date });
     await techPortalDb.settings.put({ key: "dashboardReadOnly", value: payload.readOnly ? "true" : "false" });
     await techPortalDb.settings.put({ key: "dashboardCachedAt", value: cachedAt });
@@ -293,7 +412,9 @@ export async function cacheTechnicianDashboard(payload: TechDashboardResponse) {
     // A successful authenticated dashboard load proves that the current
     // session can resume commands paused by an earlier auth challenge. Keep
     // the command and its blob; only move it back to the normal retry queue.
-    const authPending = await techPortalDb.outbox.where("status").equals("PENDING_AUTH").toArray();
+    const authPending = payload.actorUserId
+      ? (await techPortalDb.outbox.where("status").equals("PENDING_AUTH").toArray()).filter((operation) => operation.actorUserId === payload.actorUserId)
+      : [];
     await Promise.all(authPending.map((operation) => techPortalDb.outbox.put({
       ...operation,
       status: "PENDING",
@@ -305,19 +426,21 @@ export async function cacheTechnicianDashboard(payload: TechDashboardResponse) {
   });
 }
 
-export async function getCachedTechnicianDashboard(): Promise<{ date: string; tasks: TechDashboardTask[]; cacheScope: string; readOnly: boolean; actorUserId?: string } | null> {
+export async function getCachedTechnicianDashboard(expectedActorUserId?: string | null): Promise<{ date: string; tasks: TechDashboardTask[]; cacheScope: string; readOnly: boolean; actorUserId?: string } | null> {
   if (!storageAvailable()) return null;
   const scope = await techPortalDb.settings.get("cacheScope");
   const date = await techPortalDb.settings.get("dashboardDate");
   const readOnly = await techPortalDb.settings.get("dashboardReadOnly");
   const actorUserId = await techPortalDb.settings.get("actorUserId");
   if (typeof scope?.value !== "string" || typeof date?.value !== "string") return null;
+  const cachedActorUserId = typeof actorUserId?.value === "string" && actorUserId.value.trim() ? actorUserId.value.trim() : null;
+  if (expectedActorUserId !== undefined && cachedActorUserId !== expectedActorUserId) return null;
   const rows = await techPortalDb.tasks.toArray();
   if (rows.length === 0) return null;
   return {
     date: date.value,
     cacheScope: scope.value,
-    ...(typeof actorUserId?.value === "string" ? { actorUserId: actorUserId.value } : {}),
+    ...(cachedActorUserId ? { actorUserId: cachedActorUserId } : {}),
     // Before reviewer mode existed, this endpoint only returned data to
     // installers. Preserve that installer cache's offline behavior until the
     // next authenticated response writes the explicit mode flag.
@@ -352,10 +475,11 @@ export async function enqueueTechOperation(
   operation: TechOfflineOperationInput,
 ) {
   if (!storageAvailable()) throw new Error("OFFLINE_STORAGE_UNAVAILABLE");
-  const [sequence, deviceId, actorSetting] = await Promise.all([
+  if (operation.type === "QC_EVIDENCE_UPLOADED") await ensureTechStorageCapacity(operation.file.size);
+  const [sequence, deviceId, actorUserId] = await Promise.all([
     getNextSequence(),
     getOrCreateDeviceId(),
-    techPortalDb.settings.get("actorUserId"),
+    getActiveActorUserId(),
   ]);
   const timestamp = nowIso();
   const stored: TechOfflineOperation = {
@@ -370,7 +494,7 @@ export async function enqueueTechOperation(
     lastError: null,
     result: null,
     syncState: "LOCAL_SAVED",
-    actorUserId: operation.actorUserId ?? (typeof actorSetting?.value === "string" ? actorSetting.value : null),
+    actorUserId: operation.actorUserId ?? actorUserId,
     deviceId,
     baseVersion: operation.baseVersion ?? null,
     payloadSchemaVersion: TECH_SYNC_PAYLOAD_SCHEMA_VERSION,
@@ -382,7 +506,12 @@ export async function enqueueTechOperation(
     canonicalVersion: null,
     receivedAt: null,
   };
-  await techPortalDb.outbox.put(stored);
+  try {
+    await techPortalDb.outbox.put(stored);
+  } catch (error: unknown) {
+    if (isQuotaExceededError(error)) throw new TechOfflineStorageError();
+    throw error;
+  }
   await requestTechBackgroundSync();
   return stored;
 }
@@ -398,7 +527,9 @@ async function normalizeStaleSyncingOperations() {
 export async function getTechOfflineSummary(): Promise<TechOfflineSummary> {
   if (!storageAvailable()) return { ...EMPTY_TECH_OFFLINE_SUMMARY };
   await normalizeStaleSyncingOperations();
-  const operations = await techPortalDb.outbox.toArray();
+  const activeActorUserId = await getActiveActorUserId();
+  if (!activeActorUserId) return { ...EMPTY_TECH_OFFLINE_SUMMARY };
+  const operations = (await techPortalDb.outbox.toArray()).filter((operation) => operation.actorUserId === activeActorUserId);
   return operations.reduce<TechOfflineSummary>((summary, operation) => {
     if (operation.status === "PENDING" || operation.syncState === "LOCAL_SAVED" || operation.syncState === "PENDING_NETWORK") summary.pending += 1;
     if (operation.status === "PENDING_AUTH" || operation.syncState === "PENDING_AUTH") summary.pendingAuth += 1;
@@ -417,7 +548,9 @@ export async function getTechOfflineSummary(): Promise<TechOfflineSummary> {
 
 export async function getPendingTechHandoverTaskIds() {
   if (!storageAvailable()) return [];
-  const operations = await techPortalDb.outbox.toArray();
+  const activeActorUserId = await getActiveActorUserId();
+  if (!activeActorUserId) return [];
+  const operations = (await techPortalDb.outbox.toArray()).filter((operation) => operation.actorUserId === activeActorUserId);
   return Array.from(new Set(operations
     .filter((operation) => operation.type === "HANDOVER_CAPTURED" && (
       ["PENDING", "PENDING_AUTH", "SYNCING", "FAILED", "CONFLICT"].includes(operation.status)
@@ -428,7 +561,9 @@ export async function getPendingTechHandoverTaskIds() {
 
 export async function retryTechConflicts() {
   if (!storageAvailable()) return;
-  const conflicts = await techPortalDb.outbox.where("status").equals("CONFLICT").toArray();
+  const activeActorUserId = await getActiveActorUserId();
+  if (!activeActorUserId) return;
+  const conflicts = (await techPortalDb.outbox.where("status").equals("CONFLICT").toArray()).filter((operation) => operation.actorUserId === activeActorUserId);
   await Promise.all(conflicts.map((operation) => techPortalDb.outbox.put({
     ...operation,
     status: "PENDING",
@@ -476,7 +611,7 @@ function parseTechSyncAck(value: unknown, responseStatus: number) {
 
 function buildSyncEnvelope(operation: TechOfflineOperation, payload: Record<string, unknown>) {
   return {
-    commandId: operation.id,
+    commandId: operation.idempotencyKey,
     commandType: operation.type,
     idempotencyKey: operation.idempotencyKey,
     type: operation.type,
@@ -501,6 +636,7 @@ async function replayOperation(operation: TechOfflineOperation): Promise<ReplayR
   let response: Response;
   try {
     if (operation.type === "QC_EVIDENCE_UPLOADED") {
+      if (!operation.file) return { kind: "FAILURE", status: 422, message: "The local QC image is no longer available. Capture the evidence again." };
       const form = new FormData();
       form.set("operation", JSON.stringify(buildSyncEnvelope(operation, operation.payload)));
       form.set("file", operation.file, operation.fileName);
@@ -605,8 +741,10 @@ async function probeSyncAvailability(): Promise<SyncAvailability> {
 }
 
 async function pauseOperationsForAuth(message: string) {
+  const activeActorUserId = await getActiveActorUserId();
+  if (!activeActorUserId) return;
   const operations = await techPortalDb.outbox.toArray();
-  const pending = operations.filter((operation) => operation.status === "PENDING" || operation.status === "FAILED");
+  const pending = operations.filter((operation) => operation.actorUserId === activeActorUserId && (operation.status === "PENDING" || operation.status === "FAILED"));
   await Promise.all(pending.map((operation) => techPortalDb.outbox.put({
     ...operation,
     status: "PENDING_AUTH",
@@ -632,8 +770,14 @@ export async function syncTechOutbox(options: { forceRetry?: boolean } = {}): Pr
     await pauseOperationsForAuth(availability.message);
     return { ...await getTechOfflineSummary(), synced: 0, authRequired: true, lastError: availability.message };
   }
+  const activeActorUserId = await getActiveActorUserId();
+  if (!activeActorUserId) {
+    const allOperations = await techPortalDb.outbox.toArray();
+    const hasQueuedOperations = allOperations.some((operation) => operation.status !== "SYNCED" || operation.syncState !== "SYNCED");
+    return { ...empty, authRequired: hasQueuedOperations, lastError: hasQueuedOperations ? "Sign in again to resume the technician's offline work." : null };
+  }
   await normalizeStaleSyncingOperations();
-  const operations = await techPortalDb.outbox.toArray();
+  const operations = (await techPortalDb.outbox.toArray()).filter((operation) => operation.actorUserId === activeActorUserId);
   const now = Date.now();
   const candidates = operations
     .filter((operation) => operation.status === "PENDING" || operation.status === "FAILED")
@@ -670,7 +814,8 @@ export async function syncTechOutbox(options: { forceRetry?: boolean } = {}): Pr
     }
     if (replay.kind === "SUCCESS") {
       const status: TechOutboxStatus = "SYNCED";
-      await techPortalDb.outbox.put({
+      const serverConfirmedEvidence = operation.type === "QC_EVIDENCE_UPLOADED" && Boolean(replay.evidenceId && replay.serverAcknowledged);
+      const syncedOperation: TechOfflineOperation = {
         ...attemptedOperation,
         status,
         syncState: replay.syncState,
@@ -682,16 +827,22 @@ export async function syncTechOutbox(options: { forceRetry?: boolean } = {}): Pr
         erpApplied: replay.erpApplied,
         canonicalVersion: replay.canonicalVersion,
         receivedAt: replay.receivedAt,
-      });
-      if (operation.type === "QC_EVIDENCE_UPLOADED" && replay.evidenceId) {
-        await techPortalDb.evidenceLinks.put({
-          localEvidenceId: operation.payload.localEvidenceId,
-          taskId: operation.taskId,
-          phase: operation.payload.phase,
-          serverEvidenceId: replay.evidenceId,
-          sha256: operation.payload.clientSha256 || null,
-          linkedAt: nowIso(),
+        ...(serverConfirmedEvidence ? { file: null } : {}),
+      };
+      if (operation.type === "QC_EVIDENCE_UPLOADED" && replay.evidenceId && serverConfirmedEvidence) {
+        await techPortalDb.transaction("rw", techPortalDb.outbox, techPortalDb.evidenceLinks, async () => {
+          await techPortalDb.outbox.put(syncedOperation);
+          await techPortalDb.evidenceLinks.put({
+            localEvidenceId: operation.payload.localEvidenceId,
+            taskId: operation.taskId,
+            phase: operation.payload.phase,
+            serverEvidenceId: replay.evidenceId!,
+            sha256: operation.payload.clientSha256 || null,
+            linkedAt: nowIso(),
+          });
         });
+      } else {
+        await techPortalDb.outbox.put(syncedOperation);
       }
       synced += 1;
       continue;
