@@ -3596,6 +3596,7 @@
       "ordersPayments": "คำสั่งซื้อและการชำระเงิน",
       "customerDocuments": "เอกสารลูกค้า",
       "documentVerification": "ตรวจสอบ PDF ที่ลงนาม",
+      "documentTemplates": "แม่แบบเอกสาร",
       "serviceCommerce": "บริการและการขาย",
       "installationProjects": "โครงการติดตั้ง",
       "operationsWorkspace": "พื้นที่ปฏิบัติการ",

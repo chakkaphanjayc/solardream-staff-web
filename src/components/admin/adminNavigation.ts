@@ -97,6 +97,7 @@ export const ADMIN_WORKSPACES: readonly AdminWorkspace[] = [
         items: [
           { id: "orders", labelKey: "ordersPayments", href: "/admin/orders", icon: ReceiptText },
           { id: "documents", labelKey: "customerDocuments", href: "/admin/documents", icon: FileText },
+          { id: "document-templates", labelKey: "documentTemplates", href: "/admin/documents/templates", icon: FileText },
           { id: "services", labelKey: "serviceCommerce", href: "/admin/services", icon: PackageCheck },
         ],
       },
@@ -268,6 +269,7 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
       { id: "signatures", labelKey: "signatureDispatch", href: "/admin/quotations/dispatch", icon: FileCheck2 },
       { id: "payments", labelKey: "ordersPayments", href: "/admin/orders", icon: ReceiptText },
       { id: "documents", labelKey: "customerDocuments", href: "/admin/documents", icon: FileText },
+      { id: "document-templates", labelKey: "documentTemplates", href: "/admin/documents/templates", icon: FileText },
       { id: "document-verification", labelKey: "documentVerification", href: "/admin/documents/verify", icon: ShieldCheck },
     ],
   },

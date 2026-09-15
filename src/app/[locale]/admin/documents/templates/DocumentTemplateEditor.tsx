@@ -11,7 +11,6 @@ import {
   FileText,
   Minus,
   Plus,
-  Redo2,
   Save,
   Trash2,
   Undo2,
@@ -70,7 +69,19 @@ function fromTemplateField(field: DocumentServiceTemplateField): EditorField {
 }
 
 function toPdfFields(fields: EditorField[]): Array<Omit<DocumentServiceTemplateField, "id">> {
-  return fields.map(({ localId: _localId, ...field }) => field);
+  return fields.map((field) => ({
+    fieldKey: field.fieldKey,
+    fieldType: field.fieldType,
+    recipientRole: field.recipientRole,
+    pageNumber: field.pageNumber,
+    x: field.x,
+    y: field.y,
+    width: field.width,
+    height: field.height,
+    pageRotation: field.pageRotation,
+    required: field.required,
+    anchorKey: field.anchorKey,
+  }));
 }
 
 function clampField(field: EditorField, pageSize: PageSize): EditorField {
@@ -92,8 +103,10 @@ function fileFromBase64(base64: string, name: string): File {
 
 export default function DocumentTemplateEditor({
   initialTemplates,
+  initialError,
 }: {
   initialTemplates: DocumentServiceTemplate[];
+  initialError?: string;
 }) {
   const [templates, setTemplates] = useState(initialTemplates);
   const [file, setFile] = useState<File | null>(null);
@@ -106,7 +119,7 @@ export default function DocumentTemplateEditor({
   const [historyIndex, setHistoryIndex] = useState(0);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [previewField, setPreviewField] = useState<PreviewField | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError || null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [latestDraft, setLatestDraft] = useState<DocumentServiceTemplate | null>(null);
@@ -121,7 +134,7 @@ export default function DocumentTemplateEditor({
   } | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
 
-  const fields = fieldsHistory[historyIndex] || [];
+  const fields = useMemo(() => fieldsHistory[historyIndex] || [], [fieldsHistory, historyIndex]);
   const selectedField = fields.find((field) => field.localId === selectedFieldId) || null;
   const currentPageSize = pageSizes[pageNumber] || DEFAULT_PAGE_SIZE;
   const pageWidth = Math.min(900, Math.max(420, currentPageSize.width * zoom));
@@ -129,7 +142,7 @@ export default function DocumentTemplateEditor({
     () => fields.filter((field) => field.pageNumber === pageNumber),
     [fields, pageNumber],
   );
-  const filePreview = useMemo(() => (file ? { data: file } : null), [file]);
+  const filePreview = useMemo(() => file, [file]);
 
   function commit(next: EditorField[]): void {
     setFieldsHistory((current) => [...current.slice(0, historyIndex + 1), next]);
@@ -244,7 +257,7 @@ export default function DocumentTemplateEditor({
     }
   }
 
-  function startPointer(event: ReactPointerEvent<HTMLDivElement>, field: EditorField, mode: PointerMode): void {
+  function startPointer(event: ReactPointerEvent<HTMLElement>, field: EditorField, mode: PointerMode): void {
     const surface = surfaceRef.current?.getBoundingClientRect();
     if (!surface) return;
     event.preventDefault();
@@ -262,7 +275,7 @@ export default function DocumentTemplateEditor({
     };
   }
 
-  function movePointer(event: ReactPointerEvent<HTMLDivElement>): void {
+  function movePointer(event: ReactPointerEvent<HTMLElement>): void {
     const origin = pointerRef.current;
     if (!origin) return;
     const scaleX = origin.pageSize.width / origin.surface.width;
@@ -275,7 +288,7 @@ export default function DocumentTemplateEditor({
     setPreviewField({ localId: next.localId, x: next.x, y: next.y, width: next.width, height: next.height });
   }
 
-  function endPointer(event: ReactPointerEvent<HTMLDivElement>): void {
+  function endPointer(event: ReactPointerEvent<HTMLElement>): void {
     const origin = pointerRef.current;
     if (!origin) return;
     const preview = previewField;
@@ -336,7 +349,7 @@ export default function DocumentTemplateEditor({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={undo} disabled={historyIndex === 0 || busy} className="editor-tool-button" aria-label="Undo"><Undo2 className="h-4 w-4" /></button>
-              <button type="button" onClick={redo} disabled={historyIndex >= fieldsHistory.length - 1 || busy} className="editor-tool-button" aria-label="Redo"><Redo2 className="h-4 w-4" /></button>
+              <button type="button" onClick={redo} disabled={historyIndex >= fieldsHistory.length - 1 || busy} className="editor-tool-button" aria-label="Redo"><Undo2 className="h-4 w-4 rotate-180" /></button>
               <button type="button" onClick={() => setZoom((value) => Math.max(0.6, value - 0.1))} className="editor-tool-button" aria-label="Zoom out"><Minus className="h-4 w-4" /></button>
               <span className="min-w-12 text-center text-xs text-[#8b949e]">{Math.round(zoom * 100)}%</span>
               <button type="button" onClick={() => setZoom((value) => Math.min(1.8, value + 0.1))} className="editor-tool-button" aria-label="Zoom in"><Plus className="h-4 w-4" /></button>

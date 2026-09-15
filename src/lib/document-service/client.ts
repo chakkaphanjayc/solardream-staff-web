@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash, createHmac } from "node:crypto";
 import { z } from "zod";
 
 const responseSchema = z.object({
@@ -51,6 +52,10 @@ export type DocumentServiceTemplate = {
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function sha256Hex(value: string | Uint8Array): string {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 function serviceEnabled(): boolean {

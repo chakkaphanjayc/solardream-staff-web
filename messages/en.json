@@ -3596,6 +3596,7 @@
       "ordersPayments": "Orders & payments",
       "customerDocuments": "Customer documents",
       "documentVerification": "Verify signed PDF",
+      "documentTemplates": "Document templates",
       "serviceCommerce": "Service commerce",
       "installationProjects": "Installation projects",
       "operationsWorkspace": "Operations workspace",
