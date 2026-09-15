@@ -69,6 +69,7 @@ function getText(value: unknown) {
 async function claimEvents(
   limit: number,
   aggregateId?: string,
+  topics?: readonly string[],
 ): Promise<ClaimedEvent[]> {
   const configuredLease = Number(process.env.OUTBOX_PROCESSING_LEASE_SECONDS);
   const processingLeaseSeconds =
@@ -101,6 +102,9 @@ async function claimEvents(
         )
       `
     : sql``;
+  const topicFilter = topics && topics.length > 0
+    ? sql`AND (${sql.join(topics.map((topic) => sql`current_event.topic = ${topic}`), sql` OR `)})`
+    : sql``;
   return db.transaction(async (tx) => {
     const rows = await tx.execute<ClaimedEvent>(sql`
       SELECT current_event.* FROM integration_outbox AS current_event
@@ -110,6 +114,7 @@ async function claimEvents(
       )
         ${installationTopicFilter}
         ${installationOrderingFilter}
+        ${topicFilter}
         ${aggregateId ? sql`AND current_event.aggregate_id = ${aggregateId}` : sql``}
       ORDER BY current_event.created_at, current_event.id
       FOR UPDATE SKIP LOCKED
@@ -372,6 +377,18 @@ async function deliverEvent(event: ClaimedEvent) {
     return deliverPaymentNotifications(event);
   if (event.topic === "document.verified")
     return deliverDocumentVerified(event);
+  if (event.topic === "documents.render.requested") {
+    const { deliverDocumentWorkerEvent } =
+      await import("@/server/services/workers/documents/document-worker");
+    await deliverDocumentWorkerEvent(event);
+    return;
+  }
+  if (event.topic === "communications.notification.requested") {
+    const { deliverCommunicationNotification } =
+      await import("@/server/services/workers/communications/notification-worker");
+    await deliverCommunicationNotification(event);
+    return;
+  }
   if (event.topic === "erp.lifecycle.closed") return;
   if (event.topic === LISTMONK_SUBSCRIBER_SYNC_TOPIC)
     return deliverListmonkSubscriberSync(event);
@@ -429,11 +446,12 @@ export async function evaluateOutboxDelivery(
 }
 
 export async function processIntegrationOutbox(
-  input: { limit?: number; aggregateId?: string } = {},
+  input: { limit?: number; aggregateId?: string; topics?: readonly string[] } = {},
 ) {
   const events = await claimEvents(
     Math.min(Math.max(input.limit || 20, 1), 100),
     input.aggregateId,
+    input.topics,
   );
   let processed = 0;
   let failed = 0;
@@ -480,7 +498,9 @@ export async function processIntegrationOutbox(
         event.topic !== "service.case.updated" &&
         event.topic !== SERVICE_PAYMENT_VERIFIED_TOPIC &&
         event.topic !== SERVICE_QUOTE_REQUESTED_TOPIC &&
-        event.topic !== SERVICE_PORTAL_EMAIL_TOPIC
+        event.topic !== SERVICE_PORTAL_EMAIL_TOPIC &&
+        !event.topic.startsWith("communications.") &&
+        !event.topic.startsWith("documents.")
       ) {
         await publishPortalStateChanged(event.aggregateId, event.topic);
       }

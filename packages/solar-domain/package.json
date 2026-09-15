@@ -1,0 +1,12 @@
+{
+  "name": "@solar-dream/solar-domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./calculations": "./src/solar-calculations.ts",
+    "./math": "./src/solar-math.ts",
+    "./pricing": "./src/pricing.ts"
+  }
+}

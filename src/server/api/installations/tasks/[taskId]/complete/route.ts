@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTaskMutationAccess, requestIdempotencyKey } from "@/lib/installationAccess";
 import { taskCompleteSchema } from "@/lib/installationDtos";
+import { InstallationIdempotencyConflictError } from "@/lib/installationIdempotency";
 import { completeInstallationTask } from "@/lib/installationWorkflow";
 import { publishPortalStateChanged } from "@/lib/portalEvents";
 
@@ -13,5 +14,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ta
     const result = await completeInstallationTask({ taskId, actor: access.actor, idempotencyKey: body.idempotencyKey });
     await publishPortalStateChanged(access.proposalId, "INSTALLATION_TASK_COMPLETED");
     return NextResponse.json({ success: true, result });
-  } catch (error: unknown) { console.error("[Task Complete]", error); return NextResponse.json({ success: false, error: "Task completion failed." }, { status: 400 }); }
+  } catch (error: unknown) {
+    console.error("[Task Complete]", error);
+    if (error instanceof InstallationIdempotencyConflictError) return NextResponse.json({ success: false, error: error.message }, { status: 409 });
+    return NextResponse.json({ success: false, error: "Task completion failed." }, { status: 400 });
+  }
 }

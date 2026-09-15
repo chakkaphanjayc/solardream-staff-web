@@ -2,12 +2,10 @@ import assert from "node:assert/strict";
 import { NextRequest, NextResponse } from "next/server";
 
 import { proxy } from "@/proxy";
-import sitemap from "@/app/sitemap";
 import { getCookieDomain, getRequestOrigin } from "@/lib/siteUrl";
 
 process.env.NEXT_PUBLIC_SITE_URL = "https://solar-dream.org";
 process.env.NEXT_PUBLIC_ADMIN_URL = "https://admin.solar-dream.org";
-process.env.SOLARDREAM_RUNTIME_ROLE = "all";
 delete process.env.AUTH_COOKIE_DOMAIN;
 
 function request(
@@ -36,35 +34,8 @@ async function locationFor(response: NextResponse) {
 }
 
 async function main() {
-  const legacyDiscourseConnectRedirect = await proxy(
-    request("https://solar-dream.org/?sso=signed-request&sig=signed-request"),
-  );
-  assert.equal(legacyDiscourseConnectRedirect.status, 307);
-  assert.equal(
-    legacyDiscourseConnectRedirect.headers.get("location"),
-    "https://solar-dream.org/api/auth/discourse-sso?sso=signed-request&sig=signed-request",
-  );
-  assert.equal(
-    legacyDiscourseConnectRedirect.headers.get("cache-control"),
-    "no-store",
-  );
-
-  const publicAdminRedirect = await proxy(request("https://solar-dream.org/en/admin/crm?tab=leads"));
-  assert.equal(
-    await locationFor(publicAdminRedirect),
-    "https://admin.solar-dream.org/en/admin/crm?tab=leads",
-  );
-
-  const directPublicHostWins = await proxy(
-    request("https://solar-dream.org/en/admin/crm", undefined, {
-      host: "solar-dream.org",
-      "x-forwarded-host": "admin.solar-dream.org",
-    }),
-  );
-  assert.equal(
-    await locationFor(directPublicHostWins),
-    "https://admin.solar-dream.org/en/admin/crm",
-  );
+  const customerHostRejection = await proxy(request("https://solar-dream.org/en"));
+  assert.equal(customerHostRejection.status, 421);
 
   const directAdminHostWins = await proxy(
     request("https://admin.solar-dream.org/", undefined, {
@@ -85,21 +56,8 @@ async function main() {
     "locale middleware must not emit an oversized alternate-links header",
   );
 
-  process.env.SOLARDREAM_RUNTIME_ROLE = "public";
-  assert.equal(
-    (await proxy(request("https://admin.solar-dream.org/en/admin"))).status,
-    421,
-    "public runtime must reject admin-host page traffic",
-  );
-
-  process.env.SOLARDREAM_RUNTIME_ROLE = "admin";
-  assert.equal(
-    (await proxy(request("https://solar-dream.org/en"))).status,
-    421,
-    "admin runtime must reject public-host page traffic",
-  );
-
-  process.env.SOLARDREAM_RUNTIME_ROLE = "all";
+  const technicianRootRedirect = await proxy(request("https://admin.solar-dream.org/tech-portal", { NEXT_LOCALE: "en" }));
+  assert.equal(await locationFor(technicianRootRedirect), "https://admin.solar-dream.org/en/tech-portal");
 
   assert.equal(
     getRequestOrigin(
@@ -111,9 +69,6 @@ async function main() {
     ),
     "https://admin.solar-dream.org",
   );
-
-  const adminRootRedirect = await proxy(request("https://admin.solar-dream.org/"));
-  assert.equal(await locationFor(adminRootRedirect), "https://admin.solar-dream.org/th/admin");
 
   const adminLocaleRedirect = await proxy(request("https://admin.solar-dream.org/en"));
   assert.equal(await locationFor(adminLocaleRedirect), "https://admin.solar-dream.org/en/admin");
@@ -127,12 +82,6 @@ async function main() {
   );
 
   assert.equal((await proxy(request("https://admin.solar-dream.org/robots.txt"))).status, 200);
-  assert.equal((await proxy(request("https://solar-dream.org/sitemap.xml"))).status, 200);
-
-  const publicSitemap = sitemap();
-  assert.ok(publicSitemap.length > 0);
-  assert.ok(publicSitemap.every(({ url }) => url.startsWith("https://solar-dream.org/")));
-  assert.ok(publicSitemap.every(({ url }) => !url.includes("/admin")));
 
   assert.equal(getCookieDomain("solar-dream.org"), ".solar-dream.org");
   assert.equal(getCookieDomain("admin.solar-dream.org"), ".solar-dream.org");

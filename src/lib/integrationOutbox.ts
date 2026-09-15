@@ -15,7 +15,7 @@ export async function enqueueIntegrationEvent(
     dedupeKey?: string;
   },
 ) {
-  await executor.insert(integrationOutbox)
+  const [event] = await executor.insert(integrationOutbox)
     .values({
       topic: input.topic,
       eventVersion: input.eventVersion || 1,
@@ -25,5 +25,7 @@ export async function enqueueIntegrationEvent(
       payload: input.payload || {},
       dedupeKey: input.dedupeKey || null,
     })
-    .onConflictDoNothing({ target: integrationOutbox.dedupeKey });
+    .onConflictDoNothing({ target: integrationOutbox.dedupeKey })
+    .returning({ id: integrationOutbox.id });
+  return event?.id ?? null;
 }

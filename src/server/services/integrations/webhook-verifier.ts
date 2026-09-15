@@ -1,17 +1,34 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export interface WebhookReplayStore { claim(eventId: string, bodyHash: string): Promise<"CLAIMED" | "REPLAY" | "CONFLICT">; }
 export type VerifiedWebhook = { eventId: string; replayed: boolean };
 export async function verifyWebhook(input: { rawBody: Uint8Array; signature: string; timestamp: string; eventId: string; secret: string; now?: Date; toleranceSeconds?: number }, store: WebhookReplayStore): Promise<VerifiedWebhook> {
-  const epoch = Number(input.timestamp);
+  const numericTimestamp = Number(input.timestamp);
+  const parsedTimestamp = Number.isFinite(numericTimestamp)
+    ? numericTimestamp
+    : Date.parse(input.timestamp) / 1000;
+  const epoch = Math.floor(parsedTimestamp);
   const now = Math.floor((input.now ?? new Date()).valueOf() / 1000);
   if (!Number.isInteger(epoch) || Math.abs(now - epoch) > (input.toleranceSeconds ?? 300)) throw new Error("Webhook timestamp is outside the accepted window.");
   if (!input.eventId.trim() || !input.secret) throw new Error("Webhook verification is incomplete.");
   const expected = createHmac("sha256", input.secret).update(input.timestamp).update(".").update(input.rawBody).digest("hex");
-  const supplied = input.signature.replace(/^sha256=/, "");
+  const supplied = input.signature.trim().replace(/^sha256=/i, "");
   if (!/^[a-f0-9]{64}$/.test(supplied) || !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied))) throw new Error("Webhook signature is invalid.");
-  const bodyHash = createHmac("sha256", input.secret).update(input.rawBody).digest("hex");
+  const bodyHash = hashWebhookBody(input.rawBody);
   const claim = await store.claim(input.eventId, bodyHash);
   if (claim === "CONFLICT") throw new Error("Webhook event ID was reused with a different payload.");
   return { eventId: input.eventId, replayed: claim === "REPLAY" };
+}
+
+export function hashWebhookBody(rawBody: Uint8Array) {
+  return createHash("sha256").update(rawBody).digest("hex");
+}
+
+export function verifyRawWebhookSignature(input: { rawBody: Uint8Array; signature: string; secret: string }) {
+  if (!input.secret) throw new Error("Webhook verification is incomplete.");
+  const expected = createHmac("sha256", input.secret).update(input.rawBody).digest("hex");
+  const supplied = input.signature.trim().replace(/^sha256=/i, "");
+  if (!/^[a-f0-9]{64}$/i.test(supplied) || !timingSafeEqual(Buffer.from(expected), Buffer.from(supplied.toLowerCase()))) {
+    throw new Error("Webhook signature is invalid.");
+  }
 }

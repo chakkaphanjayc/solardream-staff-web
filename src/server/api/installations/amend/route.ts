@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { installationAuditEvents, installationChecklistItems, installationTasks, installationWorkflowProjects } from "@/db/schema";
 import { canReviewInstallation, getInstallationActor } from "@/lib/installationAccess";
 import { amendmentSchema } from "@/lib/installationDtos";
+import { assertInstallationAuditReplay, InstallationIdempotencyConflictError } from "@/lib/installationIdempotency";
 import { enqueueIntegrationEvent } from "@/lib/integrationOutbox";
 import { publishPortalStateChanged } from "@/lib/portalEvents";
 
@@ -50,7 +51,19 @@ export async function POST(request: NextRequest) {
       const existingAudit = await tx.query.installationAuditEvents.findFirst({
         where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey),
       });
-      if (existingAudit) {
+      if (assertInstallationAuditReplay(existingAudit, {
+        eventType: "CHECKLIST_AMENDED",
+        proposalId: row.proposalId,
+        taskId: row.task.id,
+        payload: {
+          amendsItemId: row.item.id,
+          itemCode: newItemCode,
+          label: input.label,
+          evidenceRequired: input.evidenceRequired,
+          allowsNa: input.allowsNa,
+          reason: input.reason,
+        },
+      })) {
         const existing = await tx.query.installationChecklistItems.findFirst({
           where: eq(installationChecklistItems.itemCode, newItemCode),
         });
@@ -104,6 +117,7 @@ export async function POST(request: NextRequest) {
           auditEventId: auditEvent.id,
           localTaskId: row.task.id,
           checklistItemId: created.id,
+          amendsItemCode: row.item.itemCode,
           itemCode: newItemCode,
           label: input.label,
           evidenceRequired: input.evidenceRequired,
@@ -119,6 +133,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, itemId: newItemId });
   } catch (error: unknown) {
     console.error("[Checklist Amend]", error);
+    if (error instanceof InstallationIdempotencyConflictError) return NextResponse.json({ success: false, error: error.message }, { status: 409 });
     return NextResponse.json({ success: false, error: "Checklist amendment failed." }, { status: 400 });
   }
 }

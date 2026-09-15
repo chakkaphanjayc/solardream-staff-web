@@ -181,7 +181,10 @@ export async function getCachedNavigationItems(locale: Locale) {
       orderBy: [asc(navigationItems.order)],
     }),
     readSystemSettings([NAVIGATION_TRANSLATIONS_KEY, NAVIGATION_TEMPLATES_KEY]),
-  ]);
+  ]).catch((error: unknown) => {
+    console.error("[public-content-cache] Failed to read navigation items:", error);
+    return [[], new Map<string, string | null>()] as const;
+  });
 
   const translations = parseNavigationTranslations(settings.get(NAVIGATION_TRANSLATIONS_KEY) ?? null);
   const templates = parseNavigationTemplates(settings.get(NAVIGATION_TEMPLATES_KEY) ?? null);

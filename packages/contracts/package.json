@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./app-surfaces": "./src/app-surfaces.ts",
-    "./tech-sync": "./src/tech-sync.ts"
+    "./tech-sync": "./src/tech-sync.ts",
+    "./workers": "./src/workers.ts"
   }
 }

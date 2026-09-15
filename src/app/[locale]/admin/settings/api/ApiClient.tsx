@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import CatalogSettingsClient from "../CatalogSettingsClient";
 import LineClient from "../line/LineClient";
 import ApiSetupPanel, { type ApiSetupEnvStatus, type ApiSetupValues } from "./ApiSetupPanel";
-import type { LineConversationConfig, LineQuickButton, LineTriggerConfig } from "@/lib/lineAutomationConfig";
+import type { LineConversationConfig, LineQuickButton, LineQuickReplyConfig, LineTriggerConfig } from "@/lib/lineAutomationConfig";
 
 interface ApiClientProps {
   apiSetupValues: ApiSetupValues;
@@ -35,6 +35,7 @@ interface ApiClientProps {
   initialQuickButtons: LineQuickButton[];
   initialLoginUrl: string;
   initialConversation: LineConversationConfig;
+  initialQuickReply?: LineQuickReplyConfig;
   productsList: ProductOption[];
   proposalsList: ProposalOption[];
 }
@@ -499,6 +500,7 @@ export default function ApiClient(props: ApiClientProps) {
             initialQuickButtons={props.initialQuickButtons}
             initialLoginUrl={props.initialLoginUrl}
             initialConversation={props.initialConversation}
+            initialQuickReply={props.initialQuickReply}
             productsList={props.productsList}
             proposalsList={props.proposalsList}
           />

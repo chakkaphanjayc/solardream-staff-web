@@ -1652,6 +1652,25 @@ export const integrationOutbox = pgTable("integration_outbox", {
   index("integration_outbox_correlation_idx").on(table.correlationId),
 ]);
 
+/**
+ * Durable ingress claims for provider webhooks. A provider event is claimed
+ * before its business mutation and marked processed only after the mutation
+ * commits, so retries after a lost response cannot create a second effect.
+ */
+export const integrationWebhookEvents = pgTable("integration_webhook_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull(),
+  eventId: text("event_id").notNull(),
+  bodySha256: text("body_sha256").notNull(),
+  status: text("status").default("PROCESSING").notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true, mode: "date" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("integration_webhook_events_provider_event_key").on(table.provider, table.eventId),
+  index("integration_webhook_events_status_updated_idx").on(table.status, table.updatedAt),
+]);
+
 export const installationWorkflowProjects = pgTable("installation_projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   proposalId: text("proposal_id").notNull().references(() => proposals.id, { onDelete: "cascade", onUpdate: "cascade" }),

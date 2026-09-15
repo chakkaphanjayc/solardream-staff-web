@@ -11,7 +11,6 @@ import {
   getProjectBySalesOrder,
   getQuotationDocumentNo,
 } from "@/lib/erpnext";
-import { NotificationOrchestrator } from "@/lib/notificationOrchestrator";
 import {
   markErpnextQuotationAccepted,
   stampQuotationPdf,
@@ -24,6 +23,7 @@ import { broadcastAdminEvent } from "@/lib/sse-publisher";
 import { verifyHs256Jwt } from "@/lib/signedJwt";
 import { createClient } from "@/utils/supabase/server";
 import { enqueueIntegrationEvent } from "@/lib/integrationOutbox";
+import { enqueueLifecycleNotification } from "@/server/services/communications/lifecycle-notifications";
 import { processOutboxBestEffort } from "@/lib/outboxProcessor";
 import { SALES_NOTIFICATION_TOPICS } from "@/lib/salesNotificationConfig";
 
@@ -385,17 +385,22 @@ export async function POST(request: NextRequest) {
       payload: { source: "CUSTOMER_SIGNATURE" },
       dedupeKey: `sales.quotation.accepted:${proposal.id}`,
     });
+    const notificationOperationId = await enqueueLifecycleNotification(db, {
+      eventType: "QUOTATION_ACCEPTED",
+      aggregateId: proposal.id,
+      correlationId: proposal.id,
+      payload: {
+        customerName: signerName,
+        phone: proposal.user?.phoneNumber || "",
+        email: proposal.user?.email || null,
+        lineUserId: proposal.user?.lineUserId || null,
+        quotationId,
+        proposalUrl: `/proposals/${proposal.magicTokenSlug}`,
+        pdfUrl: signedPdfUrl,
+      },
+      dedupeKey: `communications.notification.requested:QUOTATION_ACCEPTED:${proposal.id}`,
+    });
     await processOutboxBestEffort(proposal.id);
-
-    void NotificationOrchestrator("QUOTATION_ACCEPTED", {
-      customerName: signerName,
-      phone: proposal.user?.phoneNumber || "",
-      email: proposal.user?.email || null,
-      lineUserId: proposal.user?.lineUserId || null,
-      quotationId: quotationId,
-      proposalUrl: `/proposals/${proposal.magicTokenSlug}`,
-      pdfUrl: signedPdfUrl,
-    }).catch((error: unknown) => console.error("[Quotation Sign] Notification dispatch failed.", error));
 
     revalidatePath("/proposals");
     revalidatePath(`/proposals/${proposal.magicTokenSlug}`);
@@ -412,6 +417,7 @@ export async function POST(request: NextRequest) {
       verification_url: quotationVerificationUrl,
       sha256_hash: signedDocument.sha256Hash,
       golden_thread: goldenThread,
+      notification_operation_id: notificationOperationId,
     });
   } catch (error: unknown) {
     console.error("[Quotation Sign] Failed to sign quotation.", error);

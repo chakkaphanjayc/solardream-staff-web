@@ -10,6 +10,7 @@ import { timingSafeStringEqual } from "@/lib/secretAuth";
 import { listCatalogProducts } from "@/lib/erpnextCatalog";
 import { getLineIntegrationConfig, isLineLiveMutationEnabled } from "@/lib/lineApi";
 import {
+  DEFAULT_LINE_QUICK_REPLY_TEXT,
   LINE_MAX_QUICK_REPLY_ITEMS,
   resolveLineTriggerConfig,
   resolveQuickButtonValue,
@@ -1287,12 +1288,16 @@ function applyConfiguredQuickReply(
 }
 
 // Generate the configured Quick Reply Message
-function getDefaultQuickReplyMessage(siteUrl: string, quickButtons: LineQuickButton[]) {
+function getDefaultQuickReplyMessage(
+  siteUrl: string,
+  quickButtons: LineQuickButton[],
+  customText?: string,
+) {
   const quickReply = getConfiguredQuickReply(quickButtons, siteUrl);
 
   const response: JsonRecord = {
     type: "text" as const,
-    text: "ยินดีต้อนรับสู่ SolarDream ค่ะ เลือกเมนูด่วนเพื่อออกแบบระบบ ขอใบเสนอราคา หรือติดตามความคืบหน้าโครงการได้เลย",
+    text: customText?.trim() || DEFAULT_LINE_QUICK_REPLY_TEXT,
     ...(quickReply ? { quickReply } : {}),
   };
   return response;
@@ -1597,7 +1602,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        let replyMessage: LineMessage;
+        let replyMessage: LineMessage | null = null;
 
         const isOrderMatch = command === "order";
         const isInstallationMatch = command === "installation";
@@ -1631,22 +1636,30 @@ export async function POST(request: NextRequest) {
           replyMessage = { type: "text", text: "กรุณาผูกบัญชี SolarDream ก่อนตรวจสอบคะแนนสมาชิกค่ะ" };
         } else if (matchedTrigger?.kind === "custom") {
           replyMessage = getCustomTriggerMessage(matchedTrigger, siteUrl);
+        } else if (automation.quickReply?.replyAlways ?? true) {
+          replyMessage = getDefaultQuickReplyMessage(
+            siteUrl,
+            automation.quickButtons,
+            automation.quickReply?.messageText,
+          );
         } else {
-          replyMessage = getDefaultQuickReplyMessage(siteUrl, automation.quickButtons);
+          replyMessage = null;
         }
 
-        replyMessage = applyConfiguredQuickReply(replyMessage, automation.quickButtons, siteUrl);
+        if (replyMessage) {
+          replyMessage = applyConfiguredQuickReply(replyMessage, automation.quickButtons, siteUrl);
 
-        processedReplies.push({
-          replyToken,
-          command: command || matchedTrigger?.id || "default",
-          message: replyMessage,
-          userInfo: dbUser ? { id: dbUser.id, name: dbUser.fullName || dbUser.name, email: dbUser.email } : null,
-          orderInfo: latestOrder ? { id: latestOrder.id, status: latestOrder.status } : null,
-        });
+          processedReplies.push({
+            replyToken,
+            command: command || matchedTrigger?.id || "default",
+            message: replyMessage,
+            userInfo: dbUser ? { id: dbUser.id, name: dbUser.fullName || dbUser.name, email: dbUser.email } : null,
+            orderInfo: latestOrder ? { id: latestOrder.id, status: latestOrder.status } : null,
+          });
 
-        if (!isSimulated && isLineLiveMutationEnabled() && channelAccessToken) {
-          await sendLineReplyOnce(eventId, replyToken, [replyMessage], channelAccessToken);
+          if (!isSimulated && isLineLiveMutationEnabled() && channelAccessToken) {
+            await sendLineReplyOnce(eventId, replyToken, [replyMessage], channelAccessToken);
+          }
         }
         eventCompleted = true;
       }

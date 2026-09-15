@@ -39,8 +39,20 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check client environment boundaries
+        run: npm run security:client-env
+
       - name: Verify message parity
         run: npm run i18n:check
+
+      - name: Verify shared worker contracts
+        run: npm run test:worker-contract
+
+      - name: Verify solar domain contracts
+        run: npm run test:solar-domain
+
+      - name: Verify technician offline sync policy
+        run: npm run test:tech-offline-policy
 
       - name: Build standalone server
         env:

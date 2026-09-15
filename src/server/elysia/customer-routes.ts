@@ -33,12 +33,7 @@ export const customerApiRoutes = new Elysia({
   .delete("/guest/session", adaptLegacyHandler(() => import("@/server/api/guest/session/route"), "DELETE"))
   .get("/health/live", adaptLegacyHandler(() => import("@/server/api/health/live/route"), "GET"))
   .get("/health", adaptLegacyHandler(() => import("@/server/api/health/route"), "GET"))
-  .post("/installations/amend", adaptLegacyHandler(() => import("@/server/api/installations/amend/route"), "POST"))
-  .post("/installations/checklist/:itemId/complete", adaptLegacyHandler(() => import("@/server/api/installations/checklist/[itemId]/complete/route"), "POST"))
-  .post("/installations/evidence", adaptLegacyHandler(() => import("@/server/api/installations/evidence/route"), "POST"))
   .get("/installations/projects/:proposalId/snapshot", adaptLegacyHandler(() => import("@/server/api/installations/projects/[proposalId]/snapshot/route"), "GET"))
-  .post("/installations/review", adaptLegacyHandler(() => import("@/server/api/installations/review/route"), "POST"))
-  .post("/installations/tasks/:taskId/complete", adaptLegacyHandler(() => import("@/server/api/installations/tasks/[taskId]/complete/route"), "POST"))
   .get("/media/video", adaptLegacyHandler(() => import("@/server/api/media/video/route"), "GET"))
   .post("/method/create_feedback", adaptLegacyHandler(() => import("@/server/api/method/create_feedback/route"), "POST"))
   .post("/payments/verify-slip", adaptLegacyHandler(() => import("@/server/api/payments/verify-slip/route"), "POST"))
@@ -116,4 +111,4 @@ export const customerApiRoutes = new Elysia({
   .post("/wizard/financial-report", adaptLegacyHandler(() => import("@/server/api/wizard/financial-report/route"), "POST"))
 ;
 
-export const customerApiRouteCount = 104;
+export const customerApiRouteCount = 99;

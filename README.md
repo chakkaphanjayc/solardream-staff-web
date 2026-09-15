@@ -31,7 +31,10 @@ The offline protocol and recovery checklist are documented in
 ```bash
 npm run verify:standalone
 npm run typecheck
+npm run security:client-env
 npm run i18n:check
+npm run test:worker-contract
+npm run test:installation-command-adapter
 npm run build
 npm run start:local
 ```
@@ -50,6 +53,10 @@ docker run --rm --env-file .env -p 3200:3200 solardream-staff-web:local
 The image exposes the Staff surface only. Zero Trust policy and production
 routing for `admin.solar-dream.org` must be changed separately after staging
 verification.
+
+The Staff checkout also owns the local document and communications worker
+entrypoints. See [`docs/WORKERS.md`](docs/WORKERS.md) before running them
+against a shared database.
 
 ## Shared code
 

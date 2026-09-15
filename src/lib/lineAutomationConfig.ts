@@ -1,10 +1,15 @@
 export const LINE_TRIGGER_CONFIG_KEY = "line_trigger_configs";
 export const LINE_QUICK_BUTTONS_KEY = "line_quick_buttons";
 export const LINE_CONVERSATION_CONFIG_KEY = "line_conversation_config";
+export const LINE_QUICK_REPLY_CONFIG_KEY = "line_quick_reply_config";
 export const LINE_MAX_QUICK_REPLY_ITEMS = 13;
 export const LINE_QUICK_REPLY_LABEL_MAX_LENGTH = 20;
 export const LINE_QUICK_REPLY_MESSAGE_MAX_LENGTH = 300;
+export const LINE_QUICK_REPLY_TEXT_MAX_LENGTH = 1_000;
 export const LINE_QUICK_REPLY_URI_MAX_LENGTH = 2_048;
+
+export const DEFAULT_LINE_QUICK_REPLY_TEXT =
+  "ยินดีต้อนรับสู่ SolarDream ค่ะ เลือกเมนูด่วนเพื่อออกแบบระบบ ขอใบเสนอราคา หรือติดตามความคืบหน้าโครงการได้เลย";
 
 export const LINE_TRIGGER_KINDS = [
   "stock",
@@ -52,11 +57,22 @@ export type LineConversationConfig = {
   chatwootInboxUrl: string;
 };
 
+export type LineQuickReplyConfig = {
+  messageText: string;
+  replyAlways: boolean;
+};
+
+export const DEFAULT_LINE_QUICK_REPLY_CONFIG: LineQuickReplyConfig = {
+  messageText: DEFAULT_LINE_QUICK_REPLY_TEXT,
+  replyAlways: true,
+};
+
 export type LineAutomationConfig = {
   triggers: LineTriggerConfig[];
   quickButtons: LineQuickButton[];
   loginUrl: string;
   conversation: LineConversationConfig;
+  quickReply: LineQuickReplyConfig;
 };
 
 export const DEFAULT_LINE_CONVERSATION_CONFIG: LineConversationConfig = {
@@ -328,6 +344,26 @@ export function parseLineConversationConfig(raw: string | null): LineConversatio
       owner,
       chatwootWorkspaceUrl: asString(parsed.chatwootWorkspaceUrl).trim(),
       chatwootInboxUrl: asString(parsed.chatwootInboxUrl).trim(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function parseLineQuickReplyConfig(raw: string | null): LineQuickReplyConfig | null {
+  if (!raw?.trim()) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+
+    const rawText = asString(parsed.messageText);
+    const messageText = rawText.trim() ? rawText : DEFAULT_LINE_QUICK_REPLY_TEXT;
+    const replyAlways = asBoolean(parsed.replyAlways, true);
+
+    return {
+      messageText,
+      replyAlways,
     };
   } catch {
     return null;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { NotificationOrchestrator } from "@/lib/notificationOrchestrator";
+import { db } from "@/db";
+import { enqueueLifecycleNotification } from "@/server/services/communications/lifecycle-notifications";
 import type { LifecyclePayload } from "@/lib/customerLifecycle";
 
 export async function POST(request: Request) {
@@ -12,8 +13,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await NotificationOrchestrator("REQUEST_RECEIVED", payload);
-    return NextResponse.json({ success: true, phase: "REQUEST", result });
+    const notificationOperationId = await enqueueLifecycleNotification(db, {
+      eventType: "REQUEST_RECEIVED",
+      payload,
+      aggregateId: payload.leadId || undefined,
+    });
+    return NextResponse.json({ success: true, phase: "REQUEST", queued: true, notificationOperationId });
   } catch (error) {
     console.error("POST /api/lifecycle/request error:", error);
     return NextResponse.json(

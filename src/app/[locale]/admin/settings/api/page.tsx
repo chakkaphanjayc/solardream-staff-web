@@ -145,6 +145,7 @@ export default async function AdminApiSettingsPage() {
       initialQuickButtons={lineAutomation.quickButtons}
       initialLoginUrl={lineAutomation.loginUrl}
       initialConversation={lineAutomation.conversation}
+      initialQuickReply={lineAutomation.quickReply}
       productsList={productsList}
       proposalsList={proposalsList}
     />

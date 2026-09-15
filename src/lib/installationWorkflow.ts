@@ -6,6 +6,7 @@ import { installationAuditEvents, installationChecklistItems, installationEviden
 import type { InstallationActor } from "@/lib/installationAccess";
 import { deriveChecklistReadiness, deriveProjectTaskAccess, type InstallationSnapshotActor } from "@/lib/projectTaskAccess";
 import { canReviewInstallation } from "@/lib/installationAccess";
+import { assertInstallationAuditReplay } from "@/lib/installationIdempotency";
 import { isOpsProjectDependencySatisfied } from "@/lib/opsV2State";
 import { enqueueIntegrationEvent } from "@/lib/integrationOutbox";
 
@@ -74,16 +75,23 @@ export async function completeChecklistItem(input: { itemId: string; actor: Inst
   await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`installation:item:${input.itemId}`}))`);
     const existing = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) });
-    if (existing) return;
-    await tx.update(installationChecklistItems).set({ status: "VERIFIED", outcome: input.outcome, remarks: input.remarks || null, verifiedAt: now, verifiedByUserId: input.actor.userId, verificationHash })
-      .where(and(eq(installationChecklistItems.id, input.itemId), ne(installationChecklistItems.status, "VERIFIED")));
+    if (assertInstallationAuditReplay(existing, {
+      eventType: "CHECKLIST_VERIFIED",
+      proposalId: context.proposalId,
+      taskId: context.task.id,
+      checklistItemId: input.itemId,
+      payload: { outcome: input.outcome, remarks: input.remarks || null, evidenceSha256: evidence?.sha256 || null },
+    })) return;
+    const [updatedItem] = await tx.update(installationChecklistItems).set({ status: "VERIFIED", outcome: input.outcome, remarks: input.remarks || null, verifiedAt: now, verifiedByUserId: input.actor.userId, verificationHash })
+      .where(and(eq(installationChecklistItems.id, input.itemId), ne(installationChecklistItems.status, "VERIFIED"))).returning({ id: installationChecklistItems.id });
+    if (!updatedItem) throw new Error("Checklist item is already verified.");
     const [auditEvent] = await tx.insert(installationAuditEvents).values({ proposalId: context.proposalId, taskId: context.task.id, checklistItemId: input.itemId, eventType: "CHECKLIST_VERIFIED", actorUserId: input.actor.userId, idempotencyKey: input.idempotencyKey, payload: { outcome: input.outcome, remarks: input.remarks || null, evidenceSha256: evidence?.sha256 || null, afterHash: verificationHash } }).returning({ id: installationAuditEvents.id });
     if (!auditEvent) throw new Error("Checklist audit event could not be created.");
     await enqueueIntegrationEvent(tx, {
       topic: "installation.checklist.verified",
       aggregateType: "INSTALLATION_PROJECT",
       aggregateId: context.proposalId,
-      payload: { auditEventId: auditEvent.id, localTaskId: context.task.id, checklistItemId: input.itemId, outcome: input.outcome, remarks: input.remarks || null, evidenceSha256: evidence?.sha256 || null },
+      payload: { auditEventId: auditEvent.id, localTaskId: context.task.id, checklistItemId: input.itemId, itemCode: context.item.itemCode, outcome: input.outcome, remarks: input.remarks || null, evidenceSha256: evidence?.sha256 || null, evidenceMime: evidence?.contentType || null },
       dedupeKey: `installation.checklist.verified:${input.idempotencyKey}`,
     });
   });
@@ -105,8 +113,16 @@ export async function completeInstallationTask(input: { taskId: string; actor: I
   }
   await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`installation:task:${input.taskId}`}))`);
-    if (await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) })) return;
-    await tx.update(installationTasks).set({ status: "COMPLETED", completedAt: new Date(), completedByUserId: input.actor.userId, updatedAt: new Date() }).where(eq(installationTasks.id, input.taskId));
+    const existing = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) });
+    if (assertInstallationAuditReplay(existing, {
+      eventType: "TASK_COMPLETED",
+      proposalId: row.proposalId,
+      taskId: input.taskId,
+      payload: {},
+    })) return;
+    const [updatedTask] = await tx.update(installationTasks).set({ status: "COMPLETED", completedAt: new Date(), completedByUserId: input.actor.userId, updatedAt: new Date() })
+      .where(and(eq(installationTasks.id, input.taskId), ne(installationTasks.status, "COMPLETED"))).returning({ id: installationTasks.id });
+    if (!updatedTask) throw new Error("Task is already completed.");
     const [auditEvent] = await tx.insert(installationAuditEvents).values({ proposalId: row.proposalId, taskId: input.taskId, eventType: "TASK_COMPLETED", actorUserId: input.actor.userId, idempotencyKey: input.idempotencyKey, payload: {} }).returning({ id: installationAuditEvents.id });
     if (!auditEvent) throw new Error("Task audit event could not be created.");
     await enqueueIntegrationEvent(tx, {

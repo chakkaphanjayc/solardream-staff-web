@@ -12,8 +12,15 @@ import type {
   TechTestValues,
   TechnicianGps,
 } from "@/types/techPortal";
+import {
+  classifyTechSyncResponse,
+  getLegacyTechSyncState,
+  getTechRetryDelayMs,
+  isTechSyncAckState,
+  type TechOutboxStatus,
+} from "@/lib/techPortalSyncPolicy";
 
-export type TechOutboxStatus = "PENDING" | "PENDING_AUTH" | "SYNCING" | "SYNCED" | "FAILED" | "CONFLICT" | "REJECTED";
+export type { TechOutboxStatus } from "@/lib/techPortalSyncPolicy";
 
 type TechOutboxBase = {
   id: string;
@@ -203,16 +210,6 @@ export class TechOfflineStorageError extends Error {
   }
 }
 
-function getLegacySyncState(status: TechOutboxStatus): TechSyncState {
-  if (status === "SYNCING") return "UPLOADING";
-  if (status === "SYNCED") return "SYNCED";
-  if (status === "CONFLICT") return "CONFLICT";
-  if (status === "REJECTED") return "REJECTED";
-  if (status === "PENDING_AUTH") return "PENDING_AUTH";
-  if (status === "FAILED") return "RETRY_AVAILABLE";
-  return "LOCAL_SAVED";
-}
-
 class TechPortalDatabase extends Dexie {
   tasks!: Table<CachedTechTask, string>;
   outbox!: Table<TechOfflineOperation, string>;
@@ -242,7 +239,7 @@ class TechPortalDatabase extends Dexie {
         : null;
       await transaction.table("outbox").toCollection().modify((operation: TechOfflineOperation) => {
         const legacyStatus = operation.status || "PENDING";
-        operation.syncState = operation.syncState || getLegacySyncState(legacyStatus);
+        operation.syncState = operation.syncState || getLegacyTechSyncState(legacyStatus);
         operation.actorUserId = typeof operation.actorUserId === "string" && operation.actorUserId.trim()
           ? operation.actorUserId.trim()
           : legacyActorUserId;
@@ -586,10 +583,6 @@ type ReplayResult =
   | { kind: "AUTH"; status: number; message: string }
   | { kind: "FAILURE"; status: number; message: string };
 
-function isTechSyncAckState(value: unknown): value is Extract<TechSyncState, "PENDING_SERVER" | "PENDING_ERP" | "SYNCED"> {
-  return value === "PENDING_SERVER" || value === "PENDING_ERP" || value === "SYNCED";
-}
-
 function parseTechSyncAck(value: unknown, responseStatus: number) {
   const record = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const ack = record.ack && typeof record.ack === "object" && !Array.isArray(record.ack)
@@ -669,10 +662,9 @@ async function replayOperation(operation: TechOfflineOperation): Promise<ReplayR
       });
     }
 
-    const contentType = response.headers.get("content-type")?.toLowerCase() || "";
-    if (!contentType.includes("application/json")) {
-      const looksLikeAuthChallenge = response.status === 401 || response.status === 403 || response.redirected || contentType.includes("text/html");
-      return looksLikeAuthChallenge
+    const responseClass = classifyTechSyncResponse({ status: response.status, contentType: response.headers.get("content-type"), redirected: response.redirected });
+    if (responseClass !== "JSON") {
+      return responseClass === "AUTH"
         ? { kind: "AUTH", status: response.status || 401, message: "The staff session expired. Sign in again to resume synchronization." }
         : { kind: "FAILURE", status: response.status || 502, message: "The sync service returned a non-JSON response." };
     }
@@ -721,11 +713,11 @@ async function probeSyncAvailability(): Promise<SyncAvailability> {
       headers: { Accept: "application/json" },
       signal: controller.signal,
     });
-    const contentType = response.headers.get("content-type")?.toLowerCase() || "";
-    if (response.status === 401 || response.status === 403 || response.redirected || contentType.includes("text/html")) {
+    const responseClass = classifyTechSyncResponse({ status: response.status, contentType: response.headers.get("content-type"), redirected: response.redirected });
+    if (response.status === 401 || response.status === 403 || responseClass === "AUTH") {
       return { kind: "AUTH", message: "The staff session expired. Sign in again to resume synchronization." };
     }
-    if (!response.ok || !contentType.includes("application/json")) {
+    if (!response.ok || responseClass !== "JSON") {
       return { kind: "OFFLINE", message: "The staff service is not reachable yet." };
     }
     const body: unknown = await response.json().catch(() => null);
@@ -756,9 +748,7 @@ async function pauseOperationsForAuth(message: string) {
 }
 
 function nextRetryAt(attempts: number) {
-  const boundedAttempt = Math.min(Math.max(attempts, 1), 8);
-  const delay = Math.min(15 * 60 * 1000, 2 ** boundedAttempt * 1000);
-  return new Date(Date.now() + delay).toISOString();
+  return new Date(Date.now() + getTechRetryDelayMs(attempts)).toISOString();
 }
 
 export async function syncTechOutbox(options: { forceRetry?: boolean } = {}): Promise<TechSyncResult> {

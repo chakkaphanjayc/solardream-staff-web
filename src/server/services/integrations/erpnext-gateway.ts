@@ -731,6 +731,117 @@ export class ERPNextGateway {
     return extractDocument(result.data);
   }
 
+  private async callInstallationCommand(methodName: string, data: ErpnextDocument) {
+    const result = await this.request(
+      "POST",
+      "/api/method/solardream_installation.api." + methodName,
+      data,
+    );
+    const response = extractDocument(result.data);
+    if (Object.keys(response).length === 0) {
+      throw new ERPNextGatewayError("PROVIDER", "ERPNext did not return an installation command result.");
+    }
+    return response;
+  }
+
+  async completeInstallationChecklistItem(input: {
+    taskId: string;
+    itemCode: string;
+    outcome: "Pass" | "Fail" | "N/A";
+    remarks?: string | null;
+    evidenceHash?: string | null;
+    evidenceMime?: string | null;
+    idempotencyKey: string;
+  }) {
+    const taskId = getText(input.taskId);
+    const itemCode = getText(input.itemCode);
+    const idempotencyKey = getText(input.idempotencyKey);
+    if (!taskId || !itemCode || !idempotencyKey) {
+      throw new ERPNextGatewayError("VALIDATION", "ERPNext checklist command linkage is incomplete.");
+    }
+    if (input.outcome === "N/A" && !getText(input.remarks)) {
+      throw new ERPNextGatewayError("VALIDATION", "ERPNext N/A checklist commands require a reason.");
+    }
+    return this.callInstallationCommand("complete_checklist_item", {
+      task_name: taskId,
+      item_code: itemCode,
+      outcome: input.outcome,
+      remarks: getText(input.remarks) || undefined,
+      evidence_hash: getText(input.evidenceHash) || undefined,
+      evidence_mime: getText(input.evidenceMime) || undefined,
+      idempotency_key: idempotencyKey,
+    });
+  }
+
+  async completeInstallationTask(input: { taskId: string; idempotencyKey: string }) {
+    const taskId = getText(input.taskId);
+    const idempotencyKey = getText(input.idempotencyKey);
+    if (!taskId || !idempotencyKey) {
+      throw new ERPNextGatewayError("VALIDATION", "ERPNext task command linkage is incomplete.");
+    }
+    return this.callInstallationCommand("complete_task", {
+      task_name: taskId,
+      idempotency_key: idempotencyKey,
+    });
+  }
+
+  async reviewInstallationEvidence(input: {
+    taskId: string;
+    itemCode: string;
+    decision: "Approved" | "Rejected";
+    reason: string;
+    evidenceHash: string;
+    idempotencyKey: string;
+  }) {
+    const taskId = getText(input.taskId);
+    const itemCode = getText(input.itemCode);
+    const reason = getText(input.reason);
+    const evidenceHash = getText(input.evidenceHash);
+    const idempotencyKey = getText(input.idempotencyKey);
+    if (!taskId || !itemCode || !reason || !evidenceHash || !idempotencyKey) {
+      throw new ERPNextGatewayError("VALIDATION", "ERPNext evidence review command is incomplete.");
+    }
+    return this.callInstallationCommand("review_evidence", {
+      task_name: taskId,
+      item_code: itemCode,
+      decision: input.decision,
+      reason,
+      evidence_hash: evidenceHash,
+      idempotency_key: idempotencyKey,
+    });
+  }
+
+  async amendInstallationChecklistItem(input: {
+    taskId: string;
+    itemCode: string;
+    newItemCode?: string | null;
+    label: string;
+    evidenceRequired: boolean;
+    allowsNa: boolean;
+    reason: string;
+    idempotencyKey: string;
+  }) {
+    const taskId = getText(input.taskId);
+    const itemCode = getText(input.itemCode);
+    const newItemCode = getText(input.newItemCode);
+    const label = getText(input.label);
+    const reason = getText(input.reason);
+    const idempotencyKey = getText(input.idempotencyKey);
+    if (!taskId || !itemCode || !label || !reason || !idempotencyKey) {
+      throw new ERPNextGatewayError("VALIDATION", "ERPNext checklist amendment command is incomplete.");
+    }
+    return this.callInstallationCommand("amend_checklist_item", {
+      task_name: taskId,
+      item_code: itemCode,
+      new_item_code: newItemCode || undefined,
+      label,
+      evidence_required: input.evidenceRequired ? 1 : 0,
+      allows_na: input.allowsNa ? 1 : 0,
+      reason,
+      idempotency_key: idempotencyKey,
+    });
+  }
+
   async ping() {
     const result = await this.request("GET", "/api/method/frappe.auth.get_logged_user");
     return { ok: result.status >= 200 && result.status < 300 };

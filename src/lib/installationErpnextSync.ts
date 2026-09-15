@@ -15,6 +15,10 @@ import {
 } from "@/db/schema";
 import { erpNextGateway } from "@/server/services/integrations/erpnext-gateway";
 import {
+  isInstallationCommandApiEnabled,
+  staffInstallationCommandService,
+} from "@/server/services/staff-api/installation-command-service";
+import {
   createErpnextQualityInspection,
 } from "@/lib/techPortalErpnext";
 import type { TechPortalPhaseCode, TechTestValues } from "@/types/techPortal";
@@ -362,6 +366,28 @@ async function syncEvidenceReviewed(event: InstallationOutboxEvent) {
   if (!localTaskId) throw new Error("Evidence review event is missing its local task ID.");
   const projection = await getRemoteTask(event.aggregateId, localTaskId);
   const remote = requireRemoteIds(projection);
+  const localItemId = getText(payload.checklistItemId);
+  const localItem = localItemId
+    ? await db.query.installationChecklistItems.findFirst({ where: eq(installationChecklistItems.id, localItemId) })
+    : null;
+  const itemCode = getText(payload.itemCode) || getText(localItem?.itemCode);
+  const evidenceHash = getText(payload.sha256);
+  const decision = getText(payload.decision);
+  if (isInstallationCommandApiEnabled()) {
+    if (!itemCode || !evidenceHash || (decision !== "READY" && decision !== "REJECTED")) {
+      throw new Error("Evidence review event is missing the ERPNext command fields.");
+    }
+    const command = await staffInstallationCommandService.reviewEvidence({
+      taskId: remote.taskId,
+      itemCode,
+      decision,
+      reason: getText(payload.reason) || "No review reason supplied.",
+      evidenceHash,
+      idempotencyKey: event.dedupeKey || event.id,
+    });
+    if (command.state !== "ERP_APPLIED") throw new Error("ERPNext evidence review remains pending.");
+    return;
+  }
   await addMarkedComment({
     taskId: remote.taskId,
     marker: `[SolarDream-Event:${event.id}]`,
@@ -417,6 +443,28 @@ async function syncChecklistVerified(event: InstallationOutboxEvent) {
   if (!localTaskId) throw new Error("Checklist event is missing its local task ID.");
   const projection = await getRemoteTask(event.aggregateId, localTaskId);
   const remote = requireRemoteIds(projection);
+  const localItemId = getText(payload.checklistItemId);
+  const localItem = localItemId
+    ? await db.query.installationChecklistItems.findFirst({ where: eq(installationChecklistItems.id, localItemId) })
+    : null;
+  const itemCode = getText(payload.itemCode) || getText(localItem?.itemCode);
+  const outcome = getText(payload.outcome);
+  if (isInstallationCommandApiEnabled()) {
+    if (!itemCode || (outcome !== "PASS" && outcome !== "FAIL" && outcome !== "NA")) {
+      throw new Error("Checklist event is missing the ERPNext command fields.");
+    }
+    const command = await staffInstallationCommandService.completeChecklistItem({
+      taskId: remote.taskId,
+      itemCode,
+      outcome,
+      remarks: getText(payload.remarks) || null,
+      evidenceHash: getText(payload.evidenceSha256) || null,
+      evidenceMime: getText(payload.evidenceMime) || null,
+      idempotencyKey: event.dedupeKey || event.id,
+    });
+    if (command.state !== "ERP_APPLIED") throw new Error("ERPNext checklist verification remains pending.");
+    return;
+  }
   await addMarkedComment({
     taskId: remote.taskId,
     marker: `[SolarDream-Event:${event.id}]`,
@@ -435,6 +483,27 @@ async function syncChecklistAmended(event: InstallationOutboxEvent) {
   if (!localTaskId) throw new Error("Checklist amendment event is missing its local task ID.");
   const projection = await getRemoteTask(event.aggregateId, localTaskId);
   const remote = requireRemoteIds(projection);
+  const newItemCode = getText(payload.itemCode);
+  const newItemId = getText(payload.checklistItemId);
+  const originalItem = newItemId
+    ? await db.query.installationChecklistItems.findFirst({ where: eq(installationChecklistItems.supersededById, newItemId) })
+    : null;
+  const originalItemCode = getText(payload.amendsItemCode) || getText(originalItem?.itemCode);
+  if (isInstallationCommandApiEnabled()) {
+    if (!originalItemCode || !newItemCode) throw new Error("Checklist amendment event is missing the ERPNext command fields.");
+    const command = await staffInstallationCommandService.amendChecklistItem({
+      taskId: remote.taskId,
+      itemCode: originalItemCode,
+      newItemCode,
+      label: getText(payload.label),
+      evidenceRequired: payload.evidenceRequired === true,
+      allowsNa: payload.allowsNa === true,
+      reason: getText(payload.reason) || "No amendment reason supplied.",
+      idempotencyKey: event.dedupeKey || event.id,
+    });
+    if (command.state !== "ERP_APPLIED") throw new Error("ERPNext checklist amendment remains pending.");
+    return;
+  }
   await addMarkedComment({
     taskId: remote.taskId,
     marker: `[SolarDream-Event:${event.id}]`,
@@ -453,6 +522,14 @@ async function syncTaskCompleted(event: InstallationOutboxEvent) {
   if (!localTaskId) throw new Error("Task completion event is missing its local task ID.");
   const projection = await getRemoteTask(event.aggregateId, localTaskId);
   const remote = requireRemoteIds(projection);
+  if (isInstallationCommandApiEnabled()) {
+    const command = await staffInstallationCommandService.completeTask({
+      taskId: remote.taskId,
+      idempotencyKey: event.dedupeKey || event.id,
+    });
+    if (command.state !== "ERP_APPLIED") throw new Error("ERPNext task completion remains pending.");
+    return;
+  }
   await erpNextGateway.updateTaskStatus({ taskId: remote.taskId, status: "Completed", progress: 100 });
   await addMarkedComment({
     taskId: remote.taskId,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { NotificationOrchestrator } from "@/lib/notificationOrchestrator";
+import { db } from "@/db";
+import { enqueueLifecycleNotification } from "@/server/services/communications/lifecycle-notifications";
 import type { LifecyclePayload } from "@/lib/customerLifecycle";
 
 export async function POST(request: Request) {
@@ -12,12 +13,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await NotificationOrchestrator("PROJECT_COMPLETED", payload);
+    const notificationOperationId = await enqueueLifecycleNotification(db, {
+      eventType: "PROJECT_COMPLETED",
+      payload,
+      aggregateId: payload.projectId || undefined,
+    });
     return NextResponse.json({
       success: true,
       phase: "AFTER_SALE",
-      richMenuSwapped: result.channelsDispatched.includes("line_rich_menu_swapped"),
-      result,
+      queued: true,
+      richMenuSwapped: false,
+      pendingRichMenuSwap: true,
+      notificationOperationId,
     });
   } catch (error) {
     console.error("POST /api/lifecycle/complete-project error:", error);

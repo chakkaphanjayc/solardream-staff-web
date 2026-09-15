@@ -72,6 +72,24 @@ for (const requiredPath of ["src/app", "src/server/elysia", "next.config.ts", "D
   }
 }
 
+const generatedSurfacePath = path.join(projectRoot, "src", "server", "elysia", `${surface}-routes.ts`);
+if (!fs.existsSync(generatedSurfacePath)) {
+  failures.push(`missing generated ${surface} API surface`);
+} else {
+  const generatedSurface = fs.readFileSync(generatedSurfacePath, "utf8");
+  const routeLine = (pathname) => generatedSurface.split("\n").some((line) => line.includes(`(\"${pathname}`));
+  if (surface === "customer") {
+    for (const forbiddenPath of ["/admin", "/tech", "/v1/admin", "/v2/assets", "/v2/field", "/v2/integrations", "/v2/materials", "/v2/projects", "/v2/schedule", "/v2/service-cases", "/v2/visits", "/catalog/webhook", "/create-richmenu", "/crm/webhook", "/cron", "/erpnext", "/installations/amend", "/installations/checklist", "/installations/evidence", "/installations/review", "/installations/tasks", "/lifecycle", "/listmonk", "/richmenu", "/tickets", "/webhooks"]) {
+      if (routeLine(forbiddenPath)) failures.push(`customer API surface contains forbidden ${forbiddenPath}`);
+    }
+    if (!routeLine("/installations/projects/:proposalId/snapshot")) failures.push("customer API surface is missing the read-only installation snapshot");
+  } else {
+    for (const requiredPath of ["/tech/sync", "/documents/render", "/installations/amend", "/installations/checklist/:itemId/complete", "/installations/evidence", "/installations/review", "/installations/tasks/:taskId/complete"]) {
+      if (!routeLine(requiredPath)) failures.push(`staff API surface is missing ${requiredPath}`);
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error(failures.join("\n"));
   process.exitCode = 1;

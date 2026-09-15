@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { canAccessSalesResource } from "../../auth/sales-scope-policy";
 import { normalizeERPNextEnvelope } from "../../integrations/erpnext-gateway";
-import { verifyWebhook } from "../../integrations/webhook-verifier";
+import { hashWebhookBody, verifyRawWebhookSignature, verifyWebhook } from "../../integrations/webhook-verifier";
 import { createCommercialDocument, type CommercialOperation } from "../commercial-orchestration-service";
 import { matchDuplicateCustomer } from "../duplicate-matcher";
 import { ingestInboundDeal, InboundIdempotencyConflict, type StoredInboundDeal } from "../inbound-deal-service";
@@ -64,6 +64,15 @@ await assert.rejects(() => verifyWebhook({ ...verification, signature: "0".repea
 const changedBody = Buffer.from('{"status":"failed"}');
 const changedSignature = createHmac("sha256", "secret").update(timestamp).update(".").update(changedBody).digest("hex");
 await assert.rejects(() => verifyWebhook({ ...verification, rawBody: changedBody, signature: changedSignature }, replayStore)); assertions += 1;
+const isoTimestamp = "2026-08-29T00:00:00.000Z";
+const isoSignature = createHmac("sha256", "secret").update(isoTimestamp).update(".").update(rawBody).digest("hex");
+const isoClaims = new Map<string, string>();
+const isoReplayStore = { claim: async (eventId: string, bodyHash: string) => { const prior = isoClaims.get(eventId); if (!prior) { isoClaims.set(eventId, bodyHash); return "CLAIMED" as const; } return prior === bodyHash ? "REPLAY" as const : "CONFLICT" as const; } };
+assert.equal((await verifyWebhook({ ...verification, timestamp: isoTimestamp, signature: isoSignature, eventId: "evt-iso" }, isoReplayStore)).replayed, false); assertions += 1;
+const rawSignature = createHmac("sha256", "secret").update(rawBody).digest("hex").toUpperCase();
+verifyRawWebhookSignature({ rawBody, signature: `sha256=${rawSignature}`, secret: "secret" }); assertions += 1;
+assert.equal(hashWebhookBody(rawBody).length, 64); assertions += 1;
+await assert.rejects(async () => verifyRawWebhookSignature({ rawBody, signature: "0".repeat(64), secret: "secret" })); assertions += 1;
 
 const resource = { ownerUserId: "owner", assignments: [{ userId: "rep", active: true }, { userId: "old", active: true, expiresAt: new Date("2020-01-01") }] };
 check(canAccessSalesResource({ active: true, userId: "rep", permissions: ["sales:read:own"] }, resource, "sales:read"));

@@ -1,13 +1,16 @@
 import { getSystemSetting } from "@/app/actions/systemSettings";
 import {
   DEFAULT_LINE_CONVERSATION_CONFIG,
+  DEFAULT_LINE_QUICK_REPLY_CONFIG,
   createDefaultLineQuickButtons,
   createDefaultLineTriggerConfigs,
   LINE_CONVERSATION_CONFIG_KEY,
   LINE_QUICK_BUTTONS_KEY,
+  LINE_QUICK_REPLY_CONFIG_KEY,
   LINE_TRIGGER_CONFIG_KEY,
   parseLineConversationConfig,
   parseLineQuickButtons,
+  parseLineQuickReplyConfig,
   parseLineTriggerConfigs,
   type LineAutomationConfig,
 } from "@/lib/lineAutomationConfig";
@@ -17,6 +20,7 @@ export async function getLineAutomationConfig(): Promise<LineAutomationConfig> {
     savedTriggers,
     savedQuickButtons,
     savedConversation,
+    savedQuickReply,
     orderKeyword,
     quotationKeyword,
     pointsKeyword,
@@ -34,6 +38,7 @@ export async function getLineAutomationConfig(): Promise<LineAutomationConfig> {
     getSystemSetting(LINE_TRIGGER_CONFIG_KEY),
     getSystemSetting(LINE_QUICK_BUTTONS_KEY),
     getSystemSetting(LINE_CONVERSATION_CONFIG_KEY),
+    getSystemSetting(LINE_QUICK_REPLY_CONFIG_KEY),
     getSystemSetting("line_keyword_order"),
     getSystemSetting("line_keyword_quotation"),
     getSystemSetting("line_keyword_points"),
@@ -68,5 +73,6 @@ export async function getLineAutomationConfig(): Promise<LineAutomationConfig> {
     quickButtons: parseLineQuickButtons(savedQuickButtons) ?? createDefaultLineQuickButtons(triggers),
     loginUrl: (loginUrl || "").trim(),
     conversation: parseLineConversationConfig(savedConversation) ?? DEFAULT_LINE_CONVERSATION_CONFIG,
+    quickReply: parseLineQuickReplyConfig(savedQuickReply) ?? DEFAULT_LINE_QUICK_REPLY_CONFIG,
   };
 }

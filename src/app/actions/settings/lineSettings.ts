@@ -21,12 +21,15 @@ import {
   type ShippingNotificationResult,
 } from "@/lib/linePush";
 import {
+  DEFAULT_LINE_QUICK_REPLY_TEXT,
   LINE_CONVERSATION_CONFIG_KEY,
   LINE_MAX_QUICK_REPLY_ITEMS,
+  LINE_QUICK_BUTTONS_KEY,
+  LINE_QUICK_REPLY_CONFIG_KEY,
   LINE_QUICK_REPLY_LABEL_MAX_LENGTH,
   LINE_QUICK_REPLY_MESSAGE_MAX_LENGTH,
+  LINE_QUICK_REPLY_TEXT_MAX_LENGTH,
   LINE_QUICK_REPLY_URI_MAX_LENGTH,
-  LINE_QUICK_BUTTONS_KEY,
   LINE_TRIGGER_CONFIG_KEY,
   LINE_TRIGGER_KINDS,
   isLineQuickButtonAction,
@@ -34,6 +37,7 @@ import {
   sortLineQuickButtons,
   type LineConversationConfig,
   type LineQuickButton,
+  type LineQuickReplyConfig,
   type LineTriggerConfig,
 } from "@/lib/lineAutomationConfig";
 
@@ -769,6 +773,7 @@ function validateLineAutomationConfig(
   triggers: LineTriggerConfig[],
   quickButtons: LineQuickButton[],
   conversation: LineConversationConfig,
+  quickReply?: Partial<LineQuickReplyConfig>,
 ): string | null {
   if (triggers.length > 30) return "You can create up to 30 LINE triggers.";
   if (quickButtons.length > LINE_MAX_QUICK_REPLY_ITEMS) {
@@ -776,6 +781,9 @@ function validateLineAutomationConfig(
   }
   if (conversation.owner !== "native" && conversation.owner !== "chatwoot") {
     return "Choose a valid LINE conversation owner.";
+  }
+  if (quickReply?.messageText && quickReply.messageText.length > LINE_QUICK_REPLY_TEXT_MAX_LENGTH) {
+    return `Quick Reply default message must be ${LINE_QUICK_REPLY_TEXT_MAX_LENGTH} characters or less.`;
   }
 
   for (const [label, value] of [
@@ -875,6 +883,7 @@ export async function saveLineAutomationConfigAction(input: {
   quickButtons: LineQuickButton[];
   loginUrl?: string;
   conversation: LineConversationConfig;
+  quickReply?: Partial<LineQuickReplyConfig>;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await checkAdmin();
@@ -883,7 +892,7 @@ export async function saveLineAutomationConfigAction(input: {
       return { success: false, error: "Invalid LINE automation configuration." };
     }
 
-    const validationError = validateLineAutomationConfig(input.triggers, input.quickButtons, input.conversation);
+    const validationError = validateLineAutomationConfig(input.triggers, input.quickButtons, input.conversation, input.quickReply);
     if (validationError) return { success: false, error: validationError };
 
     const normalizedQuickButtons = sortLineQuickButtons(input.quickButtons).map((button, index) => ({
@@ -894,9 +903,19 @@ export async function saveLineAutomationConfigAction(input: {
       sortOrder: (index + 1) * 10,
     }));
 
+    const quickReplyConfig: LineQuickReplyConfig = {
+      messageText: typeof input.quickReply?.messageText === "string" && input.quickReply.messageText.trim()
+        ? input.quickReply.messageText.trim()
+        : DEFAULT_LINE_QUICK_REPLY_TEXT,
+      replyAlways: typeof input.quickReply?.replyAlways === "boolean"
+        ? input.quickReply.replyAlways
+        : true,
+    };
+
     const entries: { key: string; value: string }[] = [
       { key: LINE_TRIGGER_CONFIG_KEY, value: JSON.stringify(input.triggers) },
       { key: LINE_QUICK_BUTTONS_KEY, value: JSON.stringify(normalizedQuickButtons) },
+      { key: LINE_QUICK_REPLY_CONFIG_KEY, value: JSON.stringify(quickReplyConfig) },
       { key: "line_login_url", value: (input.loginUrl || "").trim() },
       { key: LINE_CONVERSATION_CONFIG_KEY, value: JSON.stringify({
         owner: input.conversation.owner,
@@ -941,6 +960,7 @@ export async function saveLineAutomationConfigAction(input: {
         enabledTriggerCount: input.triggers.filter((trigger) => trigger.enabled).length,
         quickButtonCount: normalizedQuickButtons.length,
         enabledQuickButtonCount: normalizedQuickButtons.filter((button) => button.enabled).length,
+        quickReplyAlways: quickReplyConfig.replyAlways,
       },
     });
 

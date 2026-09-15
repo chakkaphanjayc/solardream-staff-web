@@ -56,6 +56,7 @@ export const apiRoutes = new Elysia({
   .get("/cron/richmenu-scheduler", adaptLegacyHandler(() => import("@/server/api/cron/richmenu-scheduler/route"), "GET"))
   .get("/customer/project-status", adaptLegacyHandler(() => import("@/server/api/customer/project-status/route"), "GET"))
   .get("/customer/warranty-card", adaptLegacyHandler(() => import("@/server/api/customer/warranty-card/route"), "GET"))
+  .post("/documents/render", adaptLegacyHandler(() => import("@/server/api/documents/render/route"), "POST"))
   .get("/erpnext/bundles", adaptLegacyHandler(() => import("@/server/api/erpnext/bundles/route"), "GET"))
   .post("/erpnext/convert-lead", adaptLegacyHandler(() => import("@/server/api/erpnext/convert-lead/route"), "POST"))
   .get("/erpnext/items", adaptLegacyHandler(() => import("@/server/api/erpnext/items/route"), "GET"))
@@ -214,4 +215,4 @@ export const apiRoutes = new Elysia({
   .post("/wizard/financial-report", adaptLegacyHandler(() => import("@/server/api/wizard/financial-report/route"), "POST"))
 ;
 
-export const apiRouteCount = 199;
+export const apiRouteCount = 200;

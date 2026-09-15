@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { installationAuditEvents, installationChecklistItems, installationEvidence, installationTasks, installationWorkflowProjects } from "@/db/schema";
 import { canReviewInstallation, getInstallationActor } from "@/lib/installationAccess";
 import { evidenceReviewSchema } from "@/lib/installationDtos";
+import { assertInstallationAuditReplay, InstallationIdempotencyConflictError } from "@/lib/installationIdempotency";
 import { enqueueIntegrationEvent } from "@/lib/integrationOutbox";
 import { publishPortalStateChanged } from "@/lib/portalEvents";
 
@@ -45,7 +46,14 @@ export async function POST(request: NextRequest) {
 
     await db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`installation:review:${input.evidenceId}`}))`);
-      if (await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) })) return;
+      const existing = await tx.query.installationAuditEvents.findFirst({ where: eq(installationAuditEvents.idempotencyKey, input.idempotencyKey) });
+      if (assertInstallationAuditReplay(existing, {
+        eventType: `EVIDENCE_${input.decision}`,
+        proposalId: row.proposalId,
+        taskId: row.task.id,
+        checklistItemId: row.item.id,
+        payload: { evidenceId: input.evidenceId, decision: input.decision, reason: input.reason, sha256: row.evidence.sha256 },
+      })) return;
 
       await tx.update(installationEvidence).set({ status: input.decision }).where(eq(installationEvidence.id, input.evidenceId));
       const [auditEvent] = await tx.insert(installationAuditEvents).values({
@@ -73,6 +81,7 @@ export async function POST(request: NextRequest) {
           auditEventId: auditEvent.id,
           localTaskId: row.task.id,
           checklistItemId: row.item.id,
+          itemCode: row.item.itemCode,
           evidenceId: input.evidenceId,
           decision: input.decision,
           reason: input.reason,
@@ -87,6 +96,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, status: input.decision });
   } catch (error: unknown) {
     console.error("[Evidence Review]", error);
+    if (error instanceof InstallationIdempotencyConflictError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 409 });
+    }
     return NextResponse.json({ success: false, error: "Evidence review failed." }, { status: 400 });
   }
 }

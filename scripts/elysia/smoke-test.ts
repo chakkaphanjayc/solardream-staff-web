@@ -48,9 +48,11 @@ async function main() {
   );
   assert.equal(oversizedCatchAllResponse.status, 413);
 
-  process.env.SOLARDREAM_RUNTIME_ROLE = "public";
+  // The standalone Staff checkout has a fixed surface, so exercise the
+  // surface gate with the Customer host rather than the monolith's runtime
+  // role switch.
   const earlyRuntimeMismatchResponse = await catchAllPost(
-    new Request("https://admin.solar-dream.org/api/services/book", {
+    new Request("https://solar-dream.org/api/services/book", {
       method: "POST",
       headers: {
         "content-length": String(193 * 1024 * 1024),
@@ -59,7 +61,6 @@ async function main() {
     }),
   );
   assert.equal(earlyRuntimeMismatchResponse.status, 421);
-  process.env.SOLARDREAM_RUNTIME_ROLE = "all";
 
   const retiredResponse = await app.handle(
     new Request("http://localhost/api/services/book", { method: "POST" }),
