@@ -57,11 +57,13 @@ npm run preview:cloudflare
 ```
 
 For Cloudflare Workers Builds, use the standalone repository as the project
-root, set the build command to `npm run build:cloudflare`, and set the deploy
-command to `npx wrangler deploy`. Keep the checked-in `wrangler.jsonc` in this
-repository so Wrangler targets `.open-next/worker.js` instead of trying to
-auto-detect the original workspace. Set the required build-time and runtime
-variables from `.env.example` in Cloudflare; never commit `.env` or secrets.
+root, set the build command to `npm run build` (it automatically selects the
+OpenNext build when Workers Builds provides `WORKERS_CI=1`) or explicitly use
+`npm run build:cloudflare`, and set the deploy command to `npx wrangler deploy`.
+Keep the checked-in `wrangler.jsonc` in this repository so Wrangler targets
+`.open-next/worker.js` instead of trying to auto-detect the original workspace.
+Set the required build-time and runtime variables from `.env.example` in
+Cloudflare; never commit `.env` or secrets.
 
 ## Container
 

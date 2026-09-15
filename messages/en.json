@@ -3595,6 +3595,7 @@
       "customers": "Customers & CRM",
       "ordersPayments": "Orders & payments",
       "customerDocuments": "Customer documents",
+      "documentVerification": "Verify signed PDF",
       "serviceCommerce": "Service commerce",
       "installationProjects": "Installation projects",
       "operationsWorkspace": "Operations workspace",

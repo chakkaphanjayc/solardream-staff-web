@@ -267,6 +267,8 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
       { id: "quotations", labelKey: "pipeline", href: "/admin/quotations", icon: GitBranch },
       { id: "signatures", labelKey: "signatureDispatch", href: "/admin/quotations/dispatch", icon: FileCheck2 },
       { id: "payments", labelKey: "ordersPayments", href: "/admin/orders", icon: ReceiptText },
+      { id: "documents", labelKey: "customerDocuments", href: "/admin/documents", icon: FileText },
+      { id: "document-verification", labelKey: "documentVerification", href: "/admin/documents/verify", icon: ShieldCheck },
     ],
   },
   {

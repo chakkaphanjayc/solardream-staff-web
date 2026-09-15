@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { validateUploadFile } from "@/lib/fileValidation";
 import { getPortalClientAddress, enforcePortalRateLimit } from "@/lib/portalRateLimit";
 import { verifySignedPdf } from "@/lib/document-signing/verifyPdf";
+import { verifyPdfWithDocumentService } from "@/lib/document-service/client";
 import type { DocumentVerificationResult } from "@/types/documentSigning";
 
 const MAX_VERIFICATION_PDF_BYTES = 10 * 1024 * 1024;
@@ -37,5 +38,9 @@ export async function verifyDocument(formData: FormData): Promise<DocumentVerifi
     fallbackName: "signed-document",
     maxBytes: MAX_VERIFICATION_PDF_BYTES,
   });
-  return verifySignedPdf(new Uint8Array(await uploadedDocument.arrayBuffer()));
+  const bytes = new Uint8Array(await uploadedDocument.arrayBuffer());
+  if (process.env.DOCUMENT_SERVICE_SIGNATURE_ENABLED?.trim().toLowerCase() === "true") {
+    return verifyPdfWithDocumentService(bytes);
+  }
+  return verifySignedPdf(bytes);
 }
