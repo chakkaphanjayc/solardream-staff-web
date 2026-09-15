@@ -1,9 +1,13 @@
+import { resolve as resolvePath } from "node:path";
+
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const isDevelopment = process.env.NODE_ENV === "development";
+const isCloudflareBuild = process.env.SOLARDREAM_CLOUDFLARE_BUILD === "1";
 const projectRoot = process.cwd();
+const cloudflareAotManifestPath = "./.cloudflare/elysia-compiled.mjs";
 const configuredDeploymentId = process.env.NEXT_DEPLOYMENT_ID?.trim();
 const deploymentId = configuredDeploymentId || (isDevelopment ? `staff-local-${process.pid}` : undefined);
 
@@ -43,10 +47,28 @@ const nextConfig: NextConfig = {
   output: "standalone",
   cacheComponents: true,
   outputFileTracingRoot: projectRoot,
-  turbopack: isDevelopment ? { root: projectRoot } : undefined,
+  turbopack:
+    isDevelopment
+      ? { root: projectRoot }
+      : isCloudflareBuild
+        ? { resolveAlias: { "elysia/compiled": cloudflareAotManifestPath } }
+        : undefined,
+  webpack(config) {
+    if (isCloudflareBuild) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "elysia/compiled": resolvePath(projectRoot, cloudflareAotManifestPath),
+      };
+    }
+    return config;
+  },
   deploymentId,
   outputFileTracingIncludes: {
-    "/**": ["certificates/**/*.p12", "certificates/**/*.pfx"],
+    "/*": [
+      "certificates/**/*.p12",
+      "certificates/**/*.pfx",
+      "./node_modules/@opentelemetry/api/build/**/*",
+    ],
   },
   serverExternalPackages: [
     "@react-pdf/renderer",

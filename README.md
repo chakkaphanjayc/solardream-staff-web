@@ -43,6 +43,26 @@ The production build requires `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` and
 `NEXT_DEPLOYMENT_ID`; the full environment contract is documented in
 `.env.example`.
 
+## Cloudflare Workers
+
+This is a full-stack Next.js app. Deploy it as a Cloudflare Worker with
+OpenNext; do not use the Cloudflare Pages static-export preset.
+
+Local adapter verification:
+
+```bash
+npm run build:cloudflare
+npx wrangler deploy --dry-run
+npm run preview:cloudflare
+```
+
+For Cloudflare Workers Builds, use the standalone repository as the project
+root, set the build command to `npm run build:cloudflare`, and set the deploy
+command to `npx wrangler deploy`. Keep the checked-in `wrangler.jsonc` in this
+repository so Wrangler targets `.open-next/worker.js` instead of trying to
+auto-detect the original workspace. Set the required build-time and runtime
+variables from `.env.example` in Cloudflare; never commit `.env` or secrets.
+
 ## Container
 
 ```bash

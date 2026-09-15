@@ -7,6 +7,9 @@ import {
 } from "./request-policy";
 import { apiRoutes } from "./routes";
 
+const isCloudflareWorker =
+  typeof globalThis !== "undefined" && "WebSocketPair" in globalThis;
+
 export const app = new Elysia({
   name: "solardream-api",
   // API paths are canonical. Rejecting the alternate trailing-slash form
@@ -15,7 +18,7 @@ export const app = new Elysia({
   // Warm the compiled route dispatcher in production so the first request is
   // not responsible for JIT compilation. Development and tests keep startup
   // inexpensive and compile on demand.
-  precompile: process.env.NODE_ENV === "production",
+  precompile: process.env.NODE_ENV === "production" && !isCloudflareWorker,
   abortSignal: true,
 })
   .request(({ request }) =>

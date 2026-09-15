@@ -11,6 +11,9 @@
 # next.js
 /.next/
 **/.next/
+/.open-next/
+/.wrangler/
+/.cloudflare/
 /out/
 **/out/
 
@@ -38,6 +41,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+cloudflare-env.d.ts
 
 # Override global gitignore for local source directories named build
 !/src/app/build/
