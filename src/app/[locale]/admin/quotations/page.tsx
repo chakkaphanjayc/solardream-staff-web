@@ -7,8 +7,6 @@ import { getSalesCustomers } from "@/app/actions/salesCustomers";
 import { mapProposalToCrmRow } from "@/lib/crmRows";
 import UnifiedSalesPipelineClient from "./UnifiedSalesPipelineClient";
 
-export const instant = false;
-
 export default async function AdminQuotationsPage() {
   await connection();
 

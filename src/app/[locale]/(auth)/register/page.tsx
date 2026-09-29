@@ -3,8 +3,6 @@ import AuthFlowPage from "@/components/auth/AuthFlowPage";
 import { cookies } from "next/headers";
 import { getPortalClaimPrefill, SERVICE_PORTAL_CLAIM_COOKIE } from "@/lib/servicePortal";
 
-export const instant = false;
-
 export default async function RegisterPage() {
   const cookieStore = await cookies();
   const claimPrefill = await getPortalClaimPrefill(cookieStore.get(SERVICE_PORTAL_CLAIM_COOKIE)?.value).catch(() => null);

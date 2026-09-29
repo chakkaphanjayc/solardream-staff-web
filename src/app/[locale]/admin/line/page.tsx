@@ -9,8 +9,6 @@ import { listDifyIntegrations } from "@/app/actions/difyIntegration";
 import { getLineIntegrationConfig } from "@/lib/lineApi";
 import { AdminPageHeader, AdminStatusBadge } from "@/components/admin/AdminPrimitives";
 
-export const instant = false;
-
 export default async function LineOverviewPage({ params }: { params: Promise<{ locale: string }> }) {
   await connection();
   const { locale } = await params;

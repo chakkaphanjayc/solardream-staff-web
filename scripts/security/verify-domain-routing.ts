@@ -37,6 +37,14 @@ async function main() {
   const customerHostRejection = await proxy(request("https://solar-dream.org/en"));
   assert.equal(customerHostRejection.status, 421);
 
+  const workersDevRedirect = await proxy(
+    request("https://solardream-staff-web.chakkaphan-pocki.workers.dev/th/admin?source=workers-dev"),
+  );
+  assert.equal(
+    await locationFor(workersDevRedirect),
+    "https://admin.solar-dream.org/th/admin?source=workers-dev",
+  );
+
   const directAdminHostWins = await proxy(
     request("https://admin.solar-dream.org/", undefined, {
       host: "admin.solar-dream.org",

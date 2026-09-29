@@ -11,8 +11,6 @@ import {
 } from "@/lib/salesNotificationServer";
 import NotificationsSettingsClient from "./NotificationsSettingsClient";
 
-export const instant = false;
-
 export default async function NotificationsSettingsPage() {
   await connection();
   await requireAdmin();

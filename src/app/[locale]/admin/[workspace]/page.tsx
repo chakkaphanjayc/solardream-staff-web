@@ -13,8 +13,6 @@ type AdminWorkspacePageProps = {
 
 // Workspace dashboards read request-scoped locale and access data, so they
 // should render on demand instead of being treated as instant-prefetch UI.
-export const instant = false;
-
 export default async function AdminWorkspacePage({ params }: AdminWorkspacePageProps) {
   await connection();
   const { locale, workspace: workspaceSlug } = await params;

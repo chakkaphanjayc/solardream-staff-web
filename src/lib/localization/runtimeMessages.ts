@@ -1,6 +1,5 @@
 import "server-only";
 
-import { cacheLife, cacheTag } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { systemSettingsKeyValue } from "@/db/schema";
@@ -47,11 +46,6 @@ export function parseRuntimeMessageOverrides(value: unknown): RuntimeMessageOver
 }
 
 export async function getRuntimeMessageOverrides(): Promise<RuntimeMessageOverrides> {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(RUNTIME_MESSAGES_CACHE_TAG);
-
   try {
     const row = await db.query.systemSettingsKeyValue.findFirst({
       where: eq(systemSettingsKeyValue.key, RUNTIME_MESSAGE_OVERRIDES_KEY),

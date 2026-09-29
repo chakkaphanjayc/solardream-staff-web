@@ -7,8 +7,6 @@ import { listDifyIntegrations } from "@/app/actions/difyIntegration";
 import { AdminPageHeader } from "@/components/admin/AdminPrimitives";
 import LineTestCenterClient from "./LineTestCenterClient";
 
-export const instant = false;
-
 export default async function LineTestCenterPage({ params }: { params: Promise<{ locale: string }> }) {
   await connection();
   const { locale } = await params;

@@ -1,4 +1,3 @@
-import { cacheLife, cacheTag } from "next/cache";
 import { and, asc, desc, eq, gt, isNull, lte, or } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -32,11 +31,6 @@ export type LayoutComplianceSettings = {
 } | null;
 
 export async function getCachedGlobalBanner(): Promise<LayoutBannerItem[]> {
-  "use cache";
-
-  cacheLife({ stale: 10, revalidate: 30, expire: 3600 });
-  cacheTag(BANNER_CACHE_TAG);
-
   try {
     const now = new Date();
     const banners = await db.query.globalBanners.findMany({
@@ -67,11 +61,6 @@ export async function getCachedGlobalBanner(): Promise<LayoutBannerItem[]> {
 }
 
 export async function getCachedComplianceSettings(): Promise<LayoutComplianceSettings> {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(SITE_SETTINGS_CACHE_TAG);
-
   try {
     let config = await db.query.siteSettings.findFirst({
       where: eq(siteSettings.id, "default"),

@@ -3,8 +3,6 @@ import { getBanners } from "@/app/actions/banner";
 import NotificationsClient from "./NotificationsClient";
 import { requireAdmin } from "@/lib/auth-guard";
 
-export const instant = false;
-
 export const metadata = {
   title: "Notifications - Admin Console",
   description: "Manage global banners and notifications.",

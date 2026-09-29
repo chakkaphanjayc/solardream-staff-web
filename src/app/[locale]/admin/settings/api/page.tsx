@@ -8,8 +8,6 @@ import type { ApiSetupEnvStatus, ApiSetupValues } from "./ApiSetupPanel";
 import { listCatalogProducts } from "@/lib/erpnextCatalog";
 import { getLineAutomationConfig } from "@/lib/lineAutomationServer";
 
-export const instant = false;
-
 const apiSetupKeys = [
   "site_url",
   "erpnext_site_endpoint",

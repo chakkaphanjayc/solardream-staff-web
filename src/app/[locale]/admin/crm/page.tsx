@@ -6,8 +6,6 @@ import { getSystemSetting } from "@/app/actions/systemSettings";
 import { mapLeadToCrmRow, mapProposalToCrmRow } from "@/lib/crmRows";
 import CrmClient from "./CrmClient";
 
-export const instant = false;
-
 export default async function AdminCrmPage() {
   await connection();
 

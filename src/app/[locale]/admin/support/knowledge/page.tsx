@@ -7,7 +7,6 @@ export const metadata = {
 };
 
 export default async function KnowledgeBaseConfigPage() {
-  "use cache";
   const kbConfig = await getKnowledgeBaseConfigAction();
   return <KnowledgeBaseConfigClient initialConfig={kbConfig} />;
 }

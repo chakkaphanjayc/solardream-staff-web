@@ -6,8 +6,6 @@ import { AdminPageHeader } from "@/components/admin/AdminPrimitives";
 import { getTranslations } from "next-intl/server";
 import RichMenuBuilderClient from "./RichMenuBuilderClient";
 
-export const instant = false;
-
 export default async function LineRichMenuPage({ params }: { params: Promise<{ locale: string }> }) {
   await connection();
   const { locale } = await params;

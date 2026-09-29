@@ -4,8 +4,6 @@ import { requireStaff } from "@/lib/auth-guard";
 import { isOpsV2FeatureEnabled } from "@/lib/featureFlags";
 import ServiceCasesWorkspaceClient from "./ServiceCasesWorkspaceClient";
 
-export const instant = false;
-
 export default async function ServiceCasesPage() {
   await connection();
   await requireStaff();

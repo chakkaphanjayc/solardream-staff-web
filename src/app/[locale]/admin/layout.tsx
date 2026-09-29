@@ -13,8 +13,6 @@ import { getConfiguredAdminSiteUrl } from "@/lib/siteUrl";
 
 // The operations console is request-bound by design: its auth guard reads the
 // session cookie before any page content can render.
-export const instant = false;
-
 
 export async function generateMetadata({
   params,

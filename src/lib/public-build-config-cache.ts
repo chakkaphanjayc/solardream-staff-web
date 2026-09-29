@@ -1,7 +1,5 @@
 import "server-only";
 
-import { cacheLife, cacheTag } from "next/cache";
-
 import { getPublicBuildConfig } from "@/lib/publicBuildConfig";
 import type { Locale } from "@/i18n/locales";
 
@@ -13,10 +11,5 @@ export const BUILD_CONFIG_CACHE_TAG = "build-config";
  * admin save action when the published configuration changes.
  */
 export async function getCachedPublicBuildConfig(locale: Locale) {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(BUILD_CONFIG_CACHE_TAG);
-
   return getPublicBuildConfig(locale);
 }

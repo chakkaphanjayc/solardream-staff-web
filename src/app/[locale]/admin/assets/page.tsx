@@ -2,8 +2,6 @@ import { connection } from "next/server";
 import { getAdminAssetRegistrationData } from "@/app/actions/assets";
 import AssetsClient from "./AssetsClient";
 
-export const instant = false;
-
 export default async function AdminAssetsPage() {
   await connection();
 

@@ -5,8 +5,6 @@ import { requireStaff } from "@/lib/auth-guard";
 import { isOpsV2FeatureEnabled } from "@/lib/featureFlags";
 import { listOpsProjects } from "@/server/services/ops-v2/project-service";
 
-export const instant = false;
-
 export default async function OperationsWorkspacePage() {
   await connection();
   const user = await requireStaff();

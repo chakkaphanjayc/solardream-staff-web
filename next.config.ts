@@ -45,7 +45,11 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   productionBrowserSourceMaps: false,
   output: "standalone",
-  cacheComponents: true,
+  // Next.js Cache Components relies on Node.js runtime behavior that is not
+  // supported reliably by Cloudflare Workers (the worker can hang while
+  // resolving the cache component timers). Keep it enabled for Node builds,
+  // but use the classic request rendering path for the Workers deployment.
+  cacheComponents: !isCloudflareBuild,
   outputFileTracingRoot: projectRoot,
   turbopack:
     isDevelopment

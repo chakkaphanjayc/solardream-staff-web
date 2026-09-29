@@ -2,8 +2,6 @@ import { connection } from "next/server";
 import { getDeveloperDataResourceDefinitions, getDeveloperDataRows, type DeveloperDataRow } from "@/lib/developerData";
 import DataManagerClient from "./DataManagerClient";
 
-export const instant = false;
-
 export default async function DeveloperDataPage() {
   await connection();
   const resources = getDeveloperDataResourceDefinitions();

@@ -6,8 +6,6 @@ import { GsapPulse, GsapReveal } from "@/components/ui/GsapMotion";
 import BlueprintLocalizationEditor from "../BlueprintLocalizationEditor";
 import CategoriesList from "../CategoriesList";
 
-export const instant = false;
-
 interface BlueprintDetailPageProps {
   params: Promise<{ blueprintId: string; locale: string }>;
 }

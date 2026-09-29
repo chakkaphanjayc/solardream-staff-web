@@ -6,6 +6,7 @@ import {
   getConfiguredAdminSiteUrl,
   getHostname,
   getRequestHostHeader,
+  isCloudflareWorkersHostname,
   isConfiguredAdminHost,
   isLocalHostname,
 } from "@/lib/siteUrl";
@@ -21,8 +22,18 @@ function isLocalRequest(request: NextRequest) {
   return isLocalHostname(requestHost(request));
 }
 
+function redirectWorkersDevHost(request: NextRequest) {
+  const target = new URL(getConfiguredAdminSiteUrl());
+  const requestUrl = new URL(request.url);
+  target.pathname = requestUrl.pathname;
+  target.search = requestUrl.search;
+  return NextResponse.redirect(target, 308);
+}
+
 function rejectNonStaffHost(request: NextRequest) {
-  if (isLocalRequest(request) || isConfiguredAdminHost(requestHost(request))) return null;
+  const host = requestHost(request);
+  if (isCloudflareWorkersHostname(host)) return redirectWorkersDevHost(request);
+  if (isLocalRequest(request) || isConfiguredAdminHost(host)) return null;
 
   return new NextResponse("This host belongs to the SolarDream customer application.", {
     status: 421,

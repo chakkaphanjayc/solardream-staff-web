@@ -5,8 +5,6 @@ import { requireStaff } from "@/lib/auth-guard";
 import { isOpsV2FeatureEnabled } from "@/lib/featureFlags";
 import { listScheduleBoard } from "@/server/services/ops-v2/scheduling-service";
 
-export const instant = false;
-
 export default async function OperationsSchedulePage() {
   await connection();
   const user = await requireStaff();

@@ -5,8 +5,6 @@ import { eq } from "drizzle-orm";
 import TechWorkOrderClient from "./TechWorkOrderClient";
 import type { DeliveryTask } from "@/types/delivery";
 
-export const instant = false;
-
 type PageProps = {
   params: Promise<{
     locale: string;

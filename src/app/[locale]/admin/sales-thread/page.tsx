@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 
-export const instant = false;
-
 type SalesThreadPageProps = {
   params: Promise<{ locale: string }>;
 };

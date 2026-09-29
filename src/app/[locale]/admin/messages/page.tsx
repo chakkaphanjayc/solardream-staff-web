@@ -5,8 +5,6 @@ import { listLineContent } from "@/app/actions/lineContent";
 import { AdminPageHeader } from "@/components/admin/AdminPrimitives";
 import AdminInboxClient from "./AdminInboxClient";
 
-export const instant = false;
-
 export default async function AdminMessagesPage() {
   await connection();
   const [t, result, contentResult] = await Promise.all([

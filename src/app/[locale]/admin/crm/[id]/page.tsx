@@ -21,8 +21,6 @@ import { listCatalogProducts } from "@/lib/erpnextCatalog";
 import QueryProvider from "@/components/providers/QueryProvider";
 import CrmWorkBenchClient from "./CrmWorkBenchClient";
 
-export const instant = false;
-
 interface CrmWorkbenchPageProps {
   params: Promise<{
     locale: string;

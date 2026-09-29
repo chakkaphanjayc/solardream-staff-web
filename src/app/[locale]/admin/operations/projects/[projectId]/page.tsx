@@ -4,8 +4,6 @@ import ProjectWorkspaceClient from "./ProjectWorkspaceClient";
 import { requireStaff } from "@/lib/auth-guard";
 import { isOpsV2FeatureEnabled } from "@/lib/featureFlags";
 
-export const instant = false;
-
 export default async function OperationsProjectPage({
   params,
 }: {

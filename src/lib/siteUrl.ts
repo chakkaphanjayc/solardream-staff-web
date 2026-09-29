@@ -57,6 +57,11 @@ export function isLocalHostname(hostOrUrl: string) {
   );
 }
 
+export function isCloudflareWorkersHostname(hostOrUrl: string) {
+  const hostname = getHostname(hostOrUrl);
+  return hostname.endsWith(".workers.dev");
+}
+
 function normalizeCookieHostname(hostOrUrl: string) {
   return getHostname(hostOrUrl).replace(/^\.+/, "").toLowerCase();
 }

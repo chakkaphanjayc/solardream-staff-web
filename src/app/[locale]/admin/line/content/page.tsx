@@ -4,8 +4,6 @@ import { listLineContent } from "@/app/actions/lineContent";
 import { AdminPageHeader } from "@/components/admin/AdminPrimitives";
 import LineContentLibraryClient from "./LineContentLibraryClient";
 
-export const instant = false;
-
 export default async function LineContentPage({ params }: { params: Promise<{ locale: string }> }) {
   await connection();
   const { locale } = await params;

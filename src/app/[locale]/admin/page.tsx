@@ -13,8 +13,6 @@ import { AdminPageHeader, AdminStatusBadge } from "@/components/admin/AdminPrimi
 
 const DEFAULT_UMAMI_DASHBOARD_URL = "https://umami.solar-dream.org";
 
-export const instant = false;
-
 async function getUmamiDashboardUrl() {
   const storedUrl = await getSystemSetting("umami_url");
   return (storedUrl || process.env.NEXT_PUBLIC_UMAMI_URL || process.env.UMAMI_URL || DEFAULT_UMAMI_DASHBOARD_URL).trim().replace(/\/$/, "");

@@ -13,8 +13,6 @@ export const metadata: Metadata = {
   },
 };
 
-export const instant = false;
-
 export default async function TechnicianPortalPage({
   params,
 }: {

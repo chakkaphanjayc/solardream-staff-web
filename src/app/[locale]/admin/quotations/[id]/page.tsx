@@ -21,8 +21,6 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { listCatalogProducts } from "@/lib/erpnextCatalog";
 import CrmWorkBenchClient from "@/app/[locale]/admin/crm/[id]/CrmWorkBenchClient";
 
-export const instant = false;
-
 interface QuotationPageProps {
   params: Promise<{
     locale: string;

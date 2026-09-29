@@ -6,8 +6,6 @@ import { listLineAutomationRules } from "@/app/actions/lineAutomation";
 import { AdminPageHeader } from "@/components/admin/AdminPrimitives";
 import LineAutomationClient from "./LineAutomationClient";
 
-export const instant = false;
-
 export default async function LineAutomationPage({ params }: { params: Promise<{ locale: string }> }) {
   await connection();
   const { locale } = await params;

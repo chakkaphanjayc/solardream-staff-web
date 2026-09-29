@@ -1,4 +1,3 @@
-import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
 import { navigationItems, systemSettingsKeyValue } from "@/db/schema";
 import { asc, eq, inArray, isNull } from "drizzle-orm";
@@ -121,11 +120,6 @@ function parseNavigationTemplates(value: string | null): NavigationTemplates {
 }
 
 export async function getCachedAnalyticsConfig(): Promise<AnalyticsConfig> {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(ANALYTICS_CONFIG_CACHE_TAG);
-
   const settings = await readSystemSettings([
     ...ANALYTICS_CONFIG_SETTING_KEYS,
   ]);
@@ -152,11 +146,6 @@ export async function getCachedAnalyticsConfig(): Promise<AnalyticsConfig> {
 }
 
 export async function getCachedLocalizationConfig(): Promise<LocalizationConfig> {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(LOCALIZATION_CONFIG_CACHE_TAG);
-
   const settings = await readSystemSettings(["localization_config"]);
   const value = settings.get("localization_config");
   if (!value) return DEFAULT_LOCALIZATION_CONFIG;
@@ -169,11 +158,6 @@ export async function getCachedLocalizationConfig(): Promise<LocalizationConfig>
 }
 
 export async function getCachedNavigationItems(locale: Locale) {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(NAVIGATION_CACHE_TAG);
-
   const [items, settings] = await Promise.all([
     db.query.navigationItems.findMany({
       where: isNull(navigationItems.parentId),
@@ -270,11 +254,6 @@ export async function getCachedNavigationItems(locale: Locale) {
 }
 
 export async function getCachedSupportConfig(): Promise<SupportConfig> {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(SUPPORT_CONFIG_CACHE_TAG);
-
   try {
     const row = await db.query.systemSettingsKeyValue.findFirst({
       where: eq(systemSettingsKeyValue.key, SUPPORT_CONFIG_KEY),
@@ -291,11 +270,6 @@ export async function getCachedSupportConfig(): Promise<SupportConfig> {
 }
 
 export async function getCachedKnowledgeBaseConfig(): Promise<KnowledgeBaseConfig> {
-  "use cache";
-
-  cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  cacheTag(SUPPORT_KB_CACHE_TAG);
-
   try {
     const row = await db.query.systemSettingsKeyValue.findFirst({
       where: eq(systemSettingsKeyValue.key, SUPPORT_KB_KEY),
