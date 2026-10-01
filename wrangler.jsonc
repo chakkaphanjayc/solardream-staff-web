@@ -8,7 +8,36 @@
     "global_fetch_strictly_public"
   ],
   "vars": {
-    "SOLARDREAM_APP_SURFACE": "staff"
+    "SOLARDREAM_APP_SURFACE": "staff",
+    "SOLARDREAM_REALTIME_MODE": "poll",
+    "LINE_LIVE_MUTATIONS_ENABLED": "true"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "832806faf13a41ef942bffd7b2495171"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SOLARDREAM_STAFF_ASSETS",
+      "bucket_name": "solardream-staff-assets"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "queues": {
+    "producers": [
+      {
+        "binding": "SOLARDREAM_STAFF_INTEGRATION",
+        "queue": "solardream-staff-integration"
+      },
+      {
+        "binding": "SOLARDREAM_STAFF_DOCUMENTS",
+        "queue": "solardream-staff-documents"
+      }
+    ]
   },
   "assets": {
     "directory": ".open-next/assets",

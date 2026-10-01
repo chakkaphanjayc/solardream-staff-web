@@ -41,6 +41,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  env: {
+    // Cloudflare Workers cannot keep the Node/EventEmitter SSE implementation
+    // alive safely. The admin UI falls back to explicit refreshes there.
+    NEXT_PUBLIC_ADMIN_REALTIME: isCloudflareBuild ? "poll" : "1",
+  },
   allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.93", "192.168.1.119"],
   devIndicators: false,
   productionBrowserSourceMaps: false,
@@ -108,6 +113,9 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "12mb" },
   },
   images: {
+    // OpenNext Workers do not provide the Node Sharp image optimizer. Emit
+    // direct asset URLs for this target instead of routing through /_next/image.
+    unoptimized: isCloudflareBuild,
     qualities: [75, 82, 84],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

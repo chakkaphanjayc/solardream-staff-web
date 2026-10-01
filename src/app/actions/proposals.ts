@@ -16,6 +16,7 @@ import {
   signatureAuditTrails,
 } from "@/db/schema";
 import { headers } from "next/headers";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import crypto from "crypto";
 import { eq, desc, inArray, ne, and, asc, isNull, sql } from "drizzle-orm";
 import { requireStaff, requireAdmin } from "@/lib/auth-guard";
@@ -941,6 +942,7 @@ export async function getCrmProposals(options?: { isArchived?: boolean }) {
       ),
     };
   } catch (error: unknown) {
+    if (isRedirectError(error)) throw error;
     console.error("Failed to fetch CRM proposals:", error);
     return { error: "Failed to fetch CRM proposals" };
   }

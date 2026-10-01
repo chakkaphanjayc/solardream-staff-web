@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { describeDatabaseError } from "@/db";
 import { processPrivacyRetention } from "@/lib/privacyRetention";
 import { hasValidBearerToken } from "@/lib/secretAuth";
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const result = await processPrivacyRetention({ dryRun: request.nextUrl.searchParams.get("dryRun") === "true" });
     return NextResponse.json({ success: true, ...result }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
   } catch (error) {
-    console.error("[Privacy Retention Cron]", error);
+    console.error("[Privacy Retention Cron]", describeDatabaseError(error));
     return NextResponse.json({ success: false, error: "Privacy retention run failed." }, { status: 500 });
   }
 }

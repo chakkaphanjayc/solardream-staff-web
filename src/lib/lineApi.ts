@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getSystemSetting } from "@/app/actions/systemSettings";
+import { getRuntimeEnvValue, hasCloudflareRuntimeContext } from "@/lib/runtimeEnv";
 
 export const LINE_API_BASE_URL = "https://api.line.me";
 export const LINE_DATA_API_BASE_URL = "https://api-data.line.me";
@@ -8,7 +9,8 @@ export const LINE_API_REQUEST_TIMEOUT_MS = 8_000;
 
 /** Keep customer-facing LINE mutations behind an explicit production switch. */
 export function isLineLiveMutationEnabled() {
-  return process.env.NODE_ENV === "production" && process.env.LINE_LIVE_MUTATIONS_ENABLED === "true";
+  const productionRuntime = process.env.NODE_ENV === "production" || hasCloudflareRuntimeContext();
+  return productionRuntime && getRuntimeEnvValue("LINE_LIVE_MUTATIONS_ENABLED") === "true";
 }
 
 export type LineCredentialSource = "system_settings" | "environment" | "missing";
@@ -70,13 +72,13 @@ export async function getLineIntegrationConfig(): Promise<LineIntegrationConfig>
     getSystemSetting("line_member_rich_menu_id"),
   ]);
 
-  const accessToken = resolveSetting(databaseAccessToken, process.env.LINE_CHANNEL_ACCESS_TOKEN);
-  const channelSecret = resolveSetting(databaseChannelSecret, process.env.LINE_CHANNEL_SECRET);
+  const accessToken = resolveSetting(databaseAccessToken, getRuntimeEnvValue("LINE_CHANNEL_ACCESS_TOKEN"));
+  const channelSecret = resolveSetting(databaseChannelSecret, getRuntimeEnvValue("LINE_CHANNEL_SECRET"));
   const memberRichMenuId = resolveSetting(
     databaseMemberRichMenuId,
-    process.env.NEXT_PUBLIC_RICH_MENU_MEMBER_ID ||
-      process.env.LINE_RICH_MENU_MEMBER_ID ||
-      process.env.LINE_MEMBER_RICH_MENU_ID,
+    getRuntimeEnvValue("NEXT_PUBLIC_RICH_MENU_MEMBER_ID") ||
+      getRuntimeEnvValue("LINE_RICH_MENU_MEMBER_ID") ||
+      getRuntimeEnvValue("LINE_MEMBER_RICH_MENU_ID"),
   );
 
   return {
@@ -115,6 +117,10 @@ export async function requestLineApi<T>(
   const accessToken = cleanSetting(config.accessToken);
 
   if (!accessToken) {
+    console.error("[LINE API] Channel access token is missing at runtime.", {
+      source: "accessTokenSource" in config ? config.accessTokenSource : "explicit-option",
+      runtimeEnvAvailable: Boolean(getRuntimeEnvValue("LINE_CHANNEL_ACCESS_TOKEN")),
+    });
     return {
       success: false,
       status: 500,

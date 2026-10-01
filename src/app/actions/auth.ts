@@ -99,7 +99,7 @@ export async function ensureUserExists(supabaseUser: SupabaseUser) {
   if (!normalizedEmail) return null;
 
   try {
-    const [{ db }, { users }, { eq, or }] = await Promise.all([
+    const [{ db, withDatabaseRetry }, { users }, { eq, or }] = await Promise.all([
       import("@/db"),
       import("@/db/schema"),
       import("drizzle-orm"),
@@ -107,7 +107,7 @@ export async function ensureUserExists(supabaseUser: SupabaseUser) {
     const utmCookies = await getUTMFromCookies();
 
     const lineUserId = getSupabaseLineUserId(supabaseUser);
-    const existingUser = await db.query.users.findFirst({
+    const existingUser = await withDatabaseRetry(() => db.query.users.findFirst({
       where: lineUserId
         ? or(
             eq(users.lineUserId, lineUserId),
@@ -115,7 +115,7 @@ export async function ensureUserExists(supabaseUser: SupabaseUser) {
             eq(users.id, supabaseUser.id),
           )
         : or(eq(users.email, normalizedEmail), eq(users.id, supabaseUser.id)),
-    });
+    }));
     // A failed upstream auth deletion must never restore an anonymized local identity.
     if (existingUser && (existingUser.anonymizedAt || existingUser.deletionRequestedAt || !existingUser.isActive)) return null;
 
@@ -124,22 +124,22 @@ export async function ensureUserExists(supabaseUser: SupabaseUser) {
     const userRole = isAdmin ? "ADMIN" : (existingUser?.role || "USER");
     const fullName = existingUser?.fullName || name || "";
     if (existingUser) {
-      const [updatedUser] = await db
-        .update(users)
-        .set({
-          email: normalizedEmail,
-          ...(existingUser.name ? {} : { name }),
-          ...(existingUser.fullName ? {} : { fullName }),
-          ...(existingUser.avatarUrl || !avatarUrl ? {} : { avatarUrl }),
-          ...(lineUserId ? { lineUserId, lineLinkNonce: null } : {}),
-          ...(utmCookies.utm_source ? { utm_source: utmCookies.utm_source } : {}),
-          ...(utmCookies.utm_medium ? { utm_medium: utmCookies.utm_medium } : {}),
-          ...(utmCookies.utm_campaign ? { utm_campaign: utmCookies.utm_campaign } : {}),
-          lastActivityAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, existingUser.id))
-        .returning();
+      const [updatedUser] = await withDatabaseRetry(() => db
+          .update(users)
+          .set({
+            email: normalizedEmail,
+            ...(existingUser.name ? {} : { name }),
+            ...(existingUser.fullName ? {} : { fullName }),
+            ...(existingUser.avatarUrl || !avatarUrl ? {} : { avatarUrl }),
+            ...(lineUserId ? { lineUserId, lineLinkNonce: null } : {}),
+            ...(utmCookies.utm_source ? { utm_source: utmCookies.utm_source } : {}),
+            ...(utmCookies.utm_medium ? { utm_medium: utmCookies.utm_medium } : {}),
+            ...(utmCookies.utm_campaign ? { utm_campaign: utmCookies.utm_campaign } : {}),
+            lastActivityAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, existingUser.id))
+          .returning());
 
       const resolvedUser = updatedUser ?? existingUser;
       try {
@@ -162,36 +162,36 @@ export async function ensureUserExists(supabaseUser: SupabaseUser) {
       return resolvedUser;
     }
 
-    const [updatedUser] = await db.insert(users)
-      .values({
-        id: supabaseUser.id,
-        email: normalizedEmail,
-        name,
-        fullName,
-        role: userRole,
-        ...(avatarUrl ? { avatarUrl } : {}),
-        utm_source: utmCookies.utm_source,
-        utm_medium: utmCookies.utm_medium,
-        utm_campaign: utmCookies.utm_campaign,
-        ...(lineUserId ? { lineUserId } : {}),
-        ...(preferredLanguage ? { preferredLanguage } : {}),
-      })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
+    const [updatedUser] = await withDatabaseRetry(() => db.insert(users)
+        .values({
+          id: supabaseUser.id,
           email: normalizedEmail,
           name,
-          ...(fullName ? { fullName } : {}),
+          fullName,
           role: userRole,
           ...(avatarUrl ? { avatarUrl } : {}),
-          ...(utmCookies.utm_source ? { utm_source: utmCookies.utm_source } : {}),
-          ...(utmCookies.utm_medium ? { utm_medium: utmCookies.utm_medium } : {}),
-          ...(utmCookies.utm_campaign ? { utm_campaign: utmCookies.utm_campaign } : {}),
+          utm_source: utmCookies.utm_source,
+          utm_medium: utmCookies.utm_medium,
+          utm_campaign: utmCookies.utm_campaign,
           ...(lineUserId ? { lineUserId } : {}),
-          lastActivityAt: new Date(),
-        },
-      })
-      .returning();
+          ...(preferredLanguage ? { preferredLanguage } : {}),
+        })
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            email: normalizedEmail,
+            name,
+            ...(fullName ? { fullName } : {}),
+            role: userRole,
+            ...(avatarUrl ? { avatarUrl } : {}),
+            ...(utmCookies.utm_source ? { utm_source: utmCookies.utm_source } : {}),
+            ...(utmCookies.utm_medium ? { utm_medium: utmCookies.utm_medium } : {}),
+            ...(utmCookies.utm_campaign ? { utm_campaign: utmCookies.utm_campaign } : {}),
+            ...(lineUserId ? { lineUserId } : {}),
+            lastActivityAt: new Date(),
+          },
+        })
+        .returning());
 
     if (updatedUser) {
       try {

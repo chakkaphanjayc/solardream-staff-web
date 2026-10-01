@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { eq, inArray, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
+import { sqlArray } from "@/db/sql";
 import { consultationLeads, leads, proposals, quotationDeliveryDocuments, quotationDocumentRequests, savedConfigurations, serviceOrderPayments, serviceOrders, signatureAuditTrails, userConsentLogs, users, wizardEstimateDrafts } from "@/db/schema";
 import { applyConsentPreferencePatch } from "@/lib/consentPreferences";
 import { enqueueIntegrationEvent } from "@/lib/integrationOutbox";
@@ -71,11 +72,12 @@ export async function anonymizeUserAccount(input: {
       }).where(eq(proposals.id, row.id));
     }
     if (proposalIds.length) {
-      await tx.execute(sql`UPDATE portal_access_tokens SET revoked_at = COALESCE(revoked_at, ${now}), updated_at = ${now} WHERE proposal_id = ANY(${proposalIds}::text[]) AND revoked_at IS NULL`);
+      const proposalIdArray = sqlArray(proposalIds, "text");
+      await tx.execute(sql`UPDATE portal_access_tokens SET revoked_at = COALESCE(revoked_at, ${now.toISOString()}), updated_at = ${now.toISOString()} WHERE proposal_id = ANY(${proposalIdArray}) AND revoked_at IS NULL`);
       await tx.update(signatureAuditTrails).set({ signerIpAddress: "[REDACTED]", signerUserAgent: "[REDACTED]", signatureUrl: "[REDACTED]" }).where(inArray(signatureAuditTrails.proposalId, proposalIds));
       await tx.update(quotationDocumentRequests).set({ metadata: {} }).where(inArray(quotationDocumentRequests.quotationId, proposalIds));
       await tx.update(quotationDeliveryDocuments).set({ metadata: {} }).where(inArray(quotationDeliveryDocuments.quotationId, proposalIds));
-      await tx.execute(sql`UPDATE quotation_comments SET user_id = ${surrogate}, message = '[REDACTED]' WHERE user_id = ${user.id} AND quotation_id = ANY(${proposalIds}::text[])`);
+      await tx.execute(sql`UPDATE quotation_comments SET user_id = ${surrogate}, message = '[REDACTED]' WHERE user_id = ${user.id} AND quotation_id = ANY(${proposalIdArray})`);
     }
     const serviceOrderRows = await tx.select({ id: serviceOrders.id, systemSnapshot: serviceOrders.systemSnapshot }).from(serviceOrders).where(eq(serviceOrders.customerUserId, user.id));
     for (const row of serviceOrderRows) {
@@ -95,10 +97,11 @@ export async function anonymizeUserAccount(input: {
     }
     const serviceOrderIds = serviceOrderRows.map((row) => row.id);
     if (serviceOrderIds.length) {
-      await tx.execute(sql`UPDATE service_quote_sessions SET input_snapshot='{"redacted":true}'::jsonb, pricing_snapshot='{"redacted":true}'::jsonb WHERE id IN (SELECT quote_session_id FROM service_orders WHERE id = ANY(${serviceOrderIds}::uuid[]))`);
-      await tx.execute(sql`UPDATE service_portal_tokens SET status='CLOSED', closed_at=COALESCE(closed_at, ${now}) WHERE service_order_id = ANY(${serviceOrderIds}::uuid[]) AND status='ACTIVE'`);
-      await tx.execute(sql`UPDATE service_portal_email_deliveries SET encrypted_capability=NULL WHERE token_id IN (SELECT id FROM service_portal_tokens WHERE service_order_id = ANY(${serviceOrderIds}::uuid[]))`);
-      await tx.execute(sql`DELETE FROM service_portal_claim_intents WHERE service_order_id = ANY(${serviceOrderIds}::uuid[])`);
+      const serviceOrderIdArray = sqlArray(serviceOrderIds, "uuid");
+      await tx.execute(sql`UPDATE service_quote_sessions SET input_snapshot='{"redacted":true}'::jsonb, pricing_snapshot='{"redacted":true}'::jsonb WHERE id IN (SELECT quote_session_id FROM service_orders WHERE id = ANY(${serviceOrderIdArray}))`);
+      await tx.execute(sql`UPDATE service_portal_tokens SET status='CLOSED', closed_at=COALESCE(closed_at, ${now.toISOString()}) WHERE service_order_id = ANY(${serviceOrderIdArray}) AND status='ACTIVE'`);
+      await tx.execute(sql`UPDATE service_portal_email_deliveries SET encrypted_capability=NULL WHERE token_id IN (SELECT id FROM service_portal_tokens WHERE service_order_id = ANY(${serviceOrderIdArray}))`);
+      await tx.execute(sql`DELETE FROM service_portal_claim_intents WHERE service_order_id = ANY(${serviceOrderIdArray})`);
       const paymentRows = await tx.select({ id: serviceOrderPayments.id, easySlipData: serviceOrderPayments.easySlipData }).from(serviceOrderPayments).where(inArray(serviceOrderPayments.serviceOrderId, serviceOrderIds));
       for (const payment of paymentRows) await tx.update(serviceOrderPayments).set({ easySlipData: redactPersonalData(payment.easySlipData), updatedAt: now }).where(eq(serviceOrderPayments.id, payment.id));
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { describeDatabaseError } from "@/db";
 import { processIntegrationOutbox } from "@/lib/outboxProcessor";
 import { hasValidBearerToken } from "@/lib/secretAuth";
 import { db } from "@/db";
@@ -18,9 +19,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
   try {
-    return NextResponse.json({ success: true, ...(await processIntegrationOutbox({ limit: 50 })) });
+    // Keep each Worker invocation bounded. External ERP, email, and LINE
+    // providers can each consume several seconds; draining 50 events in one
+    // request would exceed the scheduler's useful retry window.
+    return NextResponse.json({ success: true, ...(await processIntegrationOutbox({ limit: 5 })) });
   } catch (error: unknown) {
-    console.error("[Integration Outbox Cron]", error);
+    console.error("[Integration Outbox Cron]", describeDatabaseError(error));
     return NextResponse.json({ success: false, error: "Outbox processing failed." }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db, describeDatabaseError, withDatabaseRetry } from "@/db";
 import { navigationItems, systemSettingsKeyValue } from "@/db/schema";
 import { asc, eq, inArray, isNull } from "drizzle-orm";
 import {
@@ -45,19 +45,19 @@ type NavigationTemplates = Partial<Record<Locale, NavigationTemplateItem[]>>;
 
 async function readSystemSettings(keys: readonly string[]) {
   try {
-    const rows = await db
+    const rows = await withDatabaseRetry(() => db
       .select({
         key: systemSettingsKeyValue.key,
         value: systemSettingsKeyValue.value,
       })
       .from(systemSettingsKeyValue)
-      .where(inArray(systemSettingsKeyValue.key, [...keys]));
+      .where(inArray(systemSettingsKeyValue.key, [...keys])));
 
     return new Map(
       rows.map((row) => [row.key, typeof row.value === "string" ? row.value : null]),
     );
   } catch (error) {
-    console.error("[public-content-cache] Failed to read system settings:", error);
+    console.error("[public-content-cache] Failed to read system settings:", describeDatabaseError(error));
     return new Map<string, string | null>();
   }
 }
@@ -255,32 +255,32 @@ export async function getCachedNavigationItems(locale: Locale) {
 
 export async function getCachedSupportConfig(): Promise<SupportConfig> {
   try {
-    const row = await db.query.systemSettingsKeyValue.findFirst({
+    const row = await withDatabaseRetry(() => db.query.systemSettingsKeyValue.findFirst({
       where: eq(systemSettingsKeyValue.key, SUPPORT_CONFIG_KEY),
-    });
+    }));
 
     if (!row?.value) return DEFAULT_SUPPORT_CONFIG;
 
     const validated = SupportConfigSchema.safeParse(JSON.parse(row.value));
     return validated.success ? validated.data : DEFAULT_SUPPORT_CONFIG;
   } catch (error) {
-    console.error("[getCachedSupportConfig]", error);
+    console.error("[getCachedSupportConfig]", describeDatabaseError(error));
     return DEFAULT_SUPPORT_CONFIG;
   }
 }
 
 export async function getCachedKnowledgeBaseConfig(): Promise<KnowledgeBaseConfig> {
   try {
-    const row = await db.query.systemSettingsKeyValue.findFirst({
+    const row = await withDatabaseRetry(() => db.query.systemSettingsKeyValue.findFirst({
       where: eq(systemSettingsKeyValue.key, SUPPORT_KB_KEY),
-    });
+    }));
 
     if (!row?.value) return DEFAULT_KB_CONFIG;
 
     const validated = KnowledgeBaseConfigSchema.safeParse(JSON.parse(row.value));
     return validated.success ? validated.data : DEFAULT_KB_CONFIG;
   } catch (error) {
-    console.error("[getCachedKnowledgeBaseConfig]", error);
+    console.error("[getCachedKnowledgeBaseConfig]", describeDatabaseError(error));
     return DEFAULT_KB_CONFIG;
   }
 }

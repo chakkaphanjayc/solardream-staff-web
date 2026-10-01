@@ -2,8 +2,8 @@ const LOCALHOST_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)
 const DEFAULT_PUBLIC_SITE_URL = "https://solar-dream.org";
 const DEFAULT_ADMIN_SITE_URL = "https://admin.solar-dream.org";
 
-function stripTrailingSlash(value: string) {
-  return value.trim().replace(/\/$/, "");
+function stripTrailingSlash(value: string | null | undefined) {
+  return (value || "").trim().replace(/\/$/, "");
 }
 
 /**
@@ -35,8 +35,8 @@ export function getConfiguredAdminSiteUrl() {
   return stripTrailingSlash(process.env.NEXT_PUBLIC_ADMIN_URL || "") || DEFAULT_ADMIN_SITE_URL;
 }
 
-export function getHostname(hostOrUrl: string) {
-  const value = hostOrUrl.trim();
+export function getHostname(hostOrUrl: string | null | undefined) {
+  const value = (hostOrUrl || "").trim();
   if (!value) return "";
 
   try {

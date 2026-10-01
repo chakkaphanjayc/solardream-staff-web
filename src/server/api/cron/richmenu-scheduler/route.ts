@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { describeDatabaseError } from "@/db";
 import { processRichMenuScheduler } from "@/lib/richMenuScheduler";
 import { hasValidBearerToken } from "@/lib/secretAuth";
 
@@ -16,14 +17,14 @@ export async function GET(request: NextRequest) {
     const result = await processRichMenuScheduler();
     return NextResponse.json(
       {
-        success: true,
+        success: result.success,
         processedCount: result.processedCount,
         summary: result,
       },
-      { status: 200 },
+      { status: result.success ? 200 : 502 },
     );
   } catch (error) {
-    console.error("[RICH MENU SCHEDULER CRON] Execution failed.", error);
+    console.error("[RICH MENU SCHEDULER CRON] Execution failed.", describeDatabaseError(error));
     return NextResponse.json(
       {
         success: false,

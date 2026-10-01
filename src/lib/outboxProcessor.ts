@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
+import { sqlArray } from "@/db/sql";
 import {
   integrationOutbox,
   paymentRequests,
@@ -56,6 +57,8 @@ export const PRIVACY_AUTH_CLEANUP_TOPIC = "privacy.auth.cleanup";
 type ClaimedEvent = typeof integrationOutbox.$inferSelect;
 type DeliveryHandler = (event: ClaimedEvent) => Promise<void>;
 
+type RawOutboxRow = Record<string, unknown>;
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -64,6 +67,33 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function getText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function asDate(value: unknown) {
+  if (value instanceof Date) return value;
+  return new Date(String(value));
+}
+
+function mapRawOutboxRow(row: RawOutboxRow): ClaimedEvent {
+  return {
+    id: String(row.id),
+    topic: String(row.topic),
+    eventVersion: Number(row.event_version),
+    aggregateType: String(row.aggregate_type),
+    aggregateId: String(row.aggregate_id),
+    correlationId: row.correlation_id == null ? null : String(row.correlation_id),
+    payload: row.payload as ClaimedEvent["payload"],
+    dedupeKey: row.dedupe_key == null ? null : String(row.dedupe_key),
+    status: String(row.status),
+    availableAt: asDate(row.available_at),
+    attempts: Number(row.attempts),
+    lastError: row.last_error == null ? null : String(row.last_error),
+    providerReference: row.provider_reference == null ? null : String(row.provider_reference),
+    processedAt: row.processed_at == null ? null : asDate(row.processed_at),
+    deadAt: row.dead_at == null ? null : asDate(row.dead_at),
+    createdAt: asDate(row.created_at),
+    updatedAt: asDate(row.updated_at),
+  };
 }
 
 async function claimEvents(
@@ -125,9 +155,13 @@ async function claimEvents(
     await tx.execute(sql`
       UPDATE integration_outbox
       SET status = 'PROCESSING', attempts = attempts + 1, updated_at = now()
-      WHERE id = ANY(${ids}::uuid[])
+      WHERE id = ANY(${sqlArray(ids, "uuid")})
     `);
-    return rows.map((row) => ({ ...row, attempts: Number(row.attempts) + 1 }));
+    return rows.map((row) => {
+      const event = mapRawOutboxRow(row);
+      event.attempts += 1;
+      return event;
+    });
   });
 }
 

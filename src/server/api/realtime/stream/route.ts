@@ -6,12 +6,20 @@ import { subscribeToAdminEvents, type AdminSseEvent } from "@/lib/sse-publisher"
 
 const encoder = new TextEncoder();
 const HEARTBEAT_INTERVAL_MS = 25_000;
+const isRealtimeDisabled = process.env.SOLARDREAM_REALTIME_MODE !== "stream" || process.env.SOLARDREAM_CLOUDFLARE_BUILD === "1";
 
 function encodeEvent(event: AdminSseEvent) {
   return encoder.encode(`event: message\ndata: ${JSON.stringify(event)}\n\n`);
 }
 
 export async function GET(request: Request) {
+  if (isRealtimeDisabled) {
+    return new NextResponse(null, {
+      status: 410,
+      headers: { "Cache-Control": "no-store", "X-Solar-Realtime": "polling-on-workers" },
+    });
+  }
+
   const access = await requireStaffJson();
   if (!access.ok) return access.response;
 

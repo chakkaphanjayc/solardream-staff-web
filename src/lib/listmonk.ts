@@ -7,6 +7,7 @@ type ListmonkSubscriber = {
   id: number;
   email: string;
   name?: string;
+  status?: string;
   attribs?: Record<string, unknown> | null;
   lists?: Array<{
     id: number;
@@ -224,8 +225,8 @@ async function patchSubscriberProfile(
   payload: ReturnType<typeof subscriberPayload>,
 ) {
   await listmonkRequest(`/api/subscribers/${subscriberId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ name: payload.name, attribs: payload.attribs }),
+    method: "PUT",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -237,13 +238,17 @@ async function patchSubscriberNotificationProfile(
   },
 ) {
   await listmonkRequest(`/api/subscribers/${subscriber.id}`, {
-    method: "PATCH",
+    method: "PUT",
     body: JSON.stringify({
+      email: subscriber.email,
       name: payload.name,
+      status: subscriber.status || "enabled",
+      lists: (subscriber.lists ?? []).map((list) => list.id),
       attribs: {
         ...(subscriber.attribs ?? {}),
         ...payload.attribs,
       },
+      preconfirm_subscriptions: true,
     }),
   });
 }
@@ -274,8 +279,11 @@ async function syncSubscriberLists(
 }
 
 async function getSubscriberById(subscriberId: number) {
-  const response = await listmonkRequest<ListmonkResponse<ListmonkSubscriber>>(`/api/subscribers/${subscriberId}`);
-  return response.data ?? null;
+  const query = encodeURIComponent(`subscribers.id = ${subscriberId}`);
+  const response = await listmonkRequest<ListmonkResponse<ListmonkSubscriberCollection>>(
+    `/api/subscribers?query=${query}&page=1&per_page=20`,
+  );
+  return response.data?.results?.find((subscriber) => subscriber.id === subscriberId) ?? null;
 }
 
 async function syncExistingSubscriber(

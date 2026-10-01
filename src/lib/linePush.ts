@@ -8,11 +8,13 @@ type LineMessage = Record<string, unknown>;
 type LinePushResult = {
   success: boolean;
   simulated?: boolean;
+  skipped?: boolean;
   recipient?: string;
   lineUserId?: string;
   richMenuId?: string;
   linkedCount?: number;
   failedCount?: number;
+  skippedCount?: number;
   status?: number;
   data?: unknown;
   error?: string;
@@ -38,6 +40,10 @@ export type LowStockAlertResult = {
 const LINE_REQUEST_TIMEOUT_MS = 8_000;
 const MAX_LINE_ERROR_BODY_CHARS = 2_000;
 
+export function isValidLineUserId(value: string) {
+  return /^U[0-9a-f]{32}$/i.test(value.trim());
+}
+
 function isLiveLineOutboundAllowed() {
   return isLineLiveMutationEnabled();
 }
@@ -60,6 +66,15 @@ async function readLineErrorText(response: Response) {
  * Handles official LINE API requests and fails closed when the token is absent.
  */
 export async function pushMessageToLine(lineUserId: string, messages: LineMessage[]): Promise<LinePushResult> {
+  if (!isValidLineUserId(lineUserId)) {
+    return {
+      success: true,
+      skipped: true,
+      recipient: lineUserId,
+      error: "Stored LINE user ID is not valid.",
+    };
+  }
+
   const accessToken = await getAccessToken();
   
   console.info("[LINE Push] Attempting outbound push", {
@@ -166,8 +181,10 @@ export async function linkRichMenuToUser(lineUserId: string, richMenuId: string)
 
 export async function linkRichMenuToUsers(lineUserIds: string[], richMenuId: string): Promise<LinePushResult> {
   const uniqueUserIds = Array.from(new Set(lineUserIds.map((id) => id.trim()).filter(Boolean)));
-  if (uniqueUserIds.length === 0) {
-    return { success: true, simulated: false, richMenuId, linkedCount: 0 };
+  const validUserIds = uniqueUserIds.filter((lineUserId) => /^U[0-9a-f]{32}$/i.test(lineUserId));
+  const skippedCount = uniqueUserIds.length - validUserIds.length;
+  if (validUserIds.length === 0) {
+    return { success: true, simulated: false, richMenuId, linkedCount: 0, skippedCount };
   }
 
   const accessToken = await getAccessToken();
@@ -178,7 +195,8 @@ export async function linkRichMenuToUsers(lineUserIds: string[], richMenuId: str
       simulated: false,
       richMenuId,
       linkedCount: 0,
-      failedCount: uniqueUserIds.length,
+      failedCount: validUserIds.length,
+      skippedCount,
       error: "LINE channel access token is not configured.",
     };
   }
@@ -194,20 +212,20 @@ export async function linkRichMenuToUsers(lineUserIds: string[], richMenuId: str
       },
       body: JSON.stringify({
         richMenuId,
-        userIds: uniqueUserIds,
+        userIds: validUserIds,
       }),
       signal: AbortSignal.timeout(LINE_REQUEST_TIMEOUT_MS),
     });
 
     if (response.ok) {
-      return { success: true, simulated: false, richMenuId, linkedCount: uniqueUserIds.length };
+      return { success: true, simulated: false, richMenuId, linkedCount: validUserIds.length, skippedCount };
     }
 
     const errorText = await readLineErrorText(response);
     console.warn("[LINE Rich Menu] Bulk link failed, falling back to per-user linking:", errorText);
 
     const results = await Promise.allSettled(
-      uniqueUserIds.map((lineUserId) => linkRichMenuToUser(lineUserId, richMenuId)),
+      validUserIds.map((lineUserId) => linkRichMenuToUser(lineUserId, richMenuId)),
     );
 
     const failed = results.filter((result) => result.status === "rejected" || (result.status === "fulfilled" && !result.value.success));
@@ -215,8 +233,9 @@ export async function linkRichMenuToUsers(lineUserIds: string[], richMenuId: str
       success: failed.length === 0,
       simulated: false,
       richMenuId,
-      linkedCount: uniqueUserIds.length - failed.length,
+      linkedCount: validUserIds.length - failed.length,
       failedCount: failed.length,
+      skippedCount,
       error: failed.length === 0 ? undefined : errorText,
     };
   } catch (error: unknown) {

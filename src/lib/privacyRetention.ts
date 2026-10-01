@@ -4,6 +4,7 @@ import { createHmac } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
+import { sqlArray } from "@/db/sql";
 import { paymentRequests, proposals, quotationDeliveryDocuments, quotationDocumentRequests, users } from "@/db/schema";
 import { anonymizeUserAccount } from "@/lib/privacyAccount";
 import { privacyHmac } from "@/lib/privacyConsent";
@@ -28,9 +29,9 @@ async function archiveReferences(userId: string) {
   const proposalIds = proposalRows.map((row) => row.id);
   const [deliveryDocuments, requestedDocuments, paymentSlips] = proposalIds.length
     ? await Promise.all([
-      db.select({ id: quotationDeliveryDocuments.id, proposalId: quotationDeliveryDocuments.quotationId, storageProvider: quotationDeliveryDocuments.storageProvider, storageFileId: quotationDeliveryDocuments.storageFileId }).from(quotationDeliveryDocuments).where(sql`${quotationDeliveryDocuments.quotationId} = ANY(${proposalIds}::text[])`),
-      db.select({ id: quotationDocumentRequests.id, proposalId: quotationDocumentRequests.quotationId, storageProvider: quotationDocumentRequests.storageProvider, storageFileId: quotationDocumentRequests.storageFileId }).from(quotationDocumentRequests).where(sql`${quotationDocumentRequests.quotationId} = ANY(${proposalIds}::text[])`),
-      db.select({ id: paymentRequests.id, proposalId: paymentRequests.proposalId, storageProvider: paymentRequests.storageProvider, storageFileId: paymentRequests.storageFileId }).from(paymentRequests).where(sql`${paymentRequests.proposalId} = ANY(${proposalIds}::text[])`),
+      db.select({ id: quotationDeliveryDocuments.id, proposalId: quotationDeliveryDocuments.quotationId, storageProvider: quotationDeliveryDocuments.storageProvider, storageFileId: quotationDeliveryDocuments.storageFileId }).from(quotationDeliveryDocuments).where(sql`${quotationDeliveryDocuments.quotationId} = ANY(${sqlArray(proposalIds, "text")})`),
+      db.select({ id: quotationDocumentRequests.id, proposalId: quotationDocumentRequests.quotationId, storageProvider: quotationDocumentRequests.storageProvider, storageFileId: quotationDocumentRequests.storageFileId }).from(quotationDocumentRequests).where(sql`${quotationDocumentRequests.quotationId} = ANY(${sqlArray(proposalIds, "text")})`),
+      db.select({ id: paymentRequests.id, proposalId: paymentRequests.proposalId, storageProvider: paymentRequests.storageProvider, storageFileId: paymentRequests.storageFileId }).from(paymentRequests).where(sql`${paymentRequests.proposalId} = ANY(${sqlArray(proposalIds, "text")})`),
     ])
     : [[], [], []];
   return {
@@ -85,12 +86,13 @@ export async function processPrivacyRetention(input: { dryRun: boolean }) {
       `);
       const ids = rows.map((row) => row.id);
       if (!ids.length) return 0;
-      await tx.execute(sql`UPDATE service_portal_tokens SET status='CLOSED', closed_at=COALESCE(closed_at, now()) WHERE service_order_id = ANY(${ids}::uuid[]) AND status='ACTIVE'`);
-      await tx.execute(sql`UPDATE service_portal_email_deliveries SET encrypted_capability=NULL WHERE token_id IN (SELECT id FROM service_portal_tokens WHERE service_order_id = ANY(${ids}::uuid[]))`);
-      await tx.execute(sql`DELETE FROM service_portal_claim_intents WHERE service_order_id = ANY(${ids}::uuid[])`);
-      await tx.execute(sql`UPDATE service_quote_sessions SET input_snapshot='{"redacted":true}'::jsonb, pricing_snapshot='{"redacted":true}'::jsonb WHERE id IN (SELECT quote_session_id FROM service_orders WHERE id = ANY(${ids}::uuid[]))`);
-      await tx.execute(sql`UPDATE service_requests SET contact_name=NULL, contact_phone=NULL, description='[REDACTED AFTER GUEST RETENTION]', external_system_details='{}'::jsonb, updated_at=now() WHERE service_order_id = ANY(${ids}::uuid[])`);
-      await tx.execute(sql`UPDATE service_order_payments SET easyslip_data='{"redacted":true}'::jsonb, updated_at=now() WHERE service_order_id = ANY(${ids}::uuid[])`);
+      const serviceOrderIds = sqlArray(ids, "uuid");
+      await tx.execute(sql`UPDATE service_portal_tokens SET status='CLOSED', closed_at=COALESCE(closed_at, now()) WHERE service_order_id = ANY(${serviceOrderIds}) AND status='ACTIVE'`);
+      await tx.execute(sql`UPDATE service_portal_email_deliveries SET encrypted_capability=NULL WHERE token_id IN (SELECT id FROM service_portal_tokens WHERE service_order_id = ANY(${serviceOrderIds}))`);
+      await tx.execute(sql`DELETE FROM service_portal_claim_intents WHERE service_order_id = ANY(${serviceOrderIds})`);
+      await tx.execute(sql`UPDATE service_quote_sessions SET input_snapshot='{"redacted":true}'::jsonb, pricing_snapshot='{"redacted":true}'::jsonb WHERE id IN (SELECT quote_session_id FROM service_orders WHERE id = ANY(${serviceOrderIds}))`);
+      await tx.execute(sql`UPDATE service_requests SET contact_name=NULL, contact_phone=NULL, description='[REDACTED AFTER GUEST RETENTION]', external_system_details='{}'::jsonb, updated_at=now() WHERE service_order_id = ANY(${serviceOrderIds})`);
+      await tx.execute(sql`UPDATE service_order_payments SET easyslip_data='{"redacted":true}'::jsonb, updated_at=now() WHERE service_order_id = ANY(${serviceOrderIds})`);
       await tx.execute(sql`
         UPDATE service_orders
         SET contact_snapshot='{"redacted":true}'::jsonb,
@@ -107,7 +109,7 @@ export async function processPrivacyRetention(input: { dryRun: boolean }) {
             tracking_token_hash=encode(digest(gen_random_uuid()::text, 'sha256'), 'hex'),
             tracking_expires_at=now(),
             updated_at=now()
-        WHERE id = ANY(${ids}::uuid[])
+        WHERE id = ANY(${serviceOrderIds})
       `);
       return ids.length;
     });
@@ -124,7 +126,7 @@ export async function processPrivacyRetention(input: { dryRun: boolean }) {
     WHERE u.anonymized_at IS NULL
       AND (${autoAnonymize} OR u.retention_review_at IS NULL OR u.last_activity_at > u.retention_review_at)
     GROUP BY u.id
-    HAVING GREATEST(u.last_activity_at, COALESCE(MAX(p.updated_at), '-infinity'::timestamptz)) < ${cutoff}
+    HAVING GREATEST(u.last_activity_at, COALESCE(MAX(p.updated_at), '-infinity'::timestamptz)) < ${cutoff.toISOString()}
     ORDER BY u.last_activity_at ASC
     LIMIT ${batchSize}
   `);

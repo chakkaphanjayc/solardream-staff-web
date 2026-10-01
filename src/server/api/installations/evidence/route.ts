@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
 
 import { db } from "@/db";
 import { installationAuditEvents, installationChecklistItems, installationEvidence } from "@/db/schema";
@@ -11,6 +10,7 @@ import { validateUploadContentLength, validateUploadFile } from "@/lib/fileValid
 import { publishPortalStateChanged } from "@/lib/portalEvents";
 import { enqueueIntegrationEvent } from "@/lib/integrationOutbox";
 import { createAdminClient } from "@/utils/supabase/server";
+import { getImageInfo, transformImage } from "@/lib/cloudflare-images";
 
 const MAX_BYTES = 12 * 1024 * 1024;
 const MAX_DIMENSION = 12_000;
@@ -22,13 +22,11 @@ function isEvidenceImageKind(kind: string): kind is EvidenceImageKind {
 }
 
 async function normalizeEvidence(bytes: Buffer, kind: EvidenceImageKind) {
-  const image = sharp(bytes, { failOn: "error", limitInputPixels: MAX_PIXELS });
-  const metadata = await image.metadata();
+  const metadata = await getImageInfo(bytes);
   if (!metadata.width || !metadata.height || metadata.width > MAX_DIMENSION || metadata.height > MAX_DIMENSION) throw new Error("Unsupported image dimensions.");
-  const pipeline = image.rotate().toColorspace("srgb");
-  if (kind === "png") return { bytes: await pipeline.png({ compressionLevel: 9 }).toBuffer(), contentType: "image/png", extension: "png" };
-  if (kind === "webp") return { bytes: await pipeline.webp({ quality: 90 }).toBuffer(), contentType: "image/webp", extension: "webp" };
-  return { bytes: await pipeline.jpeg({ quality: 92, mozjpeg: true }).toBuffer(), contentType: "image/jpeg", extension: "jpg" };
+  if (kind === "png") return { bytes: await transformImage(bytes, { format: "png" }), contentType: "image/png", extension: "png" };
+  if (kind === "webp") return { bytes: await transformImage(bytes, { format: "webp", quality: 90 }), contentType: "image/webp", extension: "webp" };
+  return { bytes: await transformImage(bytes, { format: "jpeg", quality: 92 }), contentType: "image/jpeg", extension: "jpg" };
 }
 
 export async function POST(request: NextRequest) {

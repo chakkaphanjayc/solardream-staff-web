@@ -1,11 +1,13 @@
-import sharp from "sharp";
-
 /**
  * Bakes a subtle, professional SolarDream watermark directly onto an image buffer
  * using Sharp before saving/uploading.
  */
 export async function applySolarDreamWatermark(fileBuffer: Buffer): Promise<Buffer> {
   try {
+    // Keep Sharp out of the module initialization path. This module is also
+    // imported by CRM lead actions, while Sharp is only needed for uploads and
+    // is not supported by the Cloudflare Workers runtime.
+    const { default: sharp } = await import("sharp");
     const image = sharp(fileBuffer);
     const metadata = await image.metadata();
     const width = metadata.width || 1200;

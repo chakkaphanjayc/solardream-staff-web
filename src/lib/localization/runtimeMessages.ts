@@ -1,7 +1,7 @@
 import "server-only";
 
 import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { db, describeDatabaseError, withDatabaseRetry } from "@/db";
 import { systemSettingsKeyValue } from "@/db/schema";
 import { isLocale, type Locale } from "@/i18n/locales";
 
@@ -47,15 +47,15 @@ export function parseRuntimeMessageOverrides(value: unknown): RuntimeMessageOver
 
 export async function getRuntimeMessageOverrides(): Promise<RuntimeMessageOverrides> {
   try {
-    const row = await db.query.systemSettingsKeyValue.findFirst({
+    const row = await withDatabaseRetry(() => db.query.systemSettingsKeyValue.findFirst({
       where: eq(systemSettingsKeyValue.key, RUNTIME_MESSAGE_OVERRIDES_KEY),
       columns: { value: true },
-    });
+    }));
 
     if (!row?.value) return {};
     return parseRuntimeMessageOverrides(JSON.parse(row.value));
   } catch (error) {
-    console.error("[Runtime messages] Failed to load overrides:", error);
+    console.error("[Runtime messages] Failed to load overrides:", describeDatabaseError(error));
     return {};
   }
 }

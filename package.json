@@ -50,7 +50,9 @@
     "test:worker-contract": "tsx scripts/security/verify-worker-contract.ts",
     "worker:documents": "NODE_OPTIONS='--max-old-space-size=4096' tsx workers/documents/src/worker.ts",
     "worker:communications": "tsx workers/communications/src/worker.ts",
+    "worker:scheduler:deploy": "wrangler deploy --config workers/cloudflare-scheduler/wrangler.jsonc",
     "db:migrate:integration-webhook-events": "tsx scripts/run-integration-webhook-events-migration.ts",
+    "db:migrate:manual": "tsx scripts/run-manual-migration.ts",
     "test:sales-v2": "NODE_OPTIONS='--require ./scripts/security/server-only-test-shim.cjs' tsx src/server/services/sales/__tests__/sales-v2-foundation.test.ts",
     "test:golden-path": "npm run test:sales-v2"
   },

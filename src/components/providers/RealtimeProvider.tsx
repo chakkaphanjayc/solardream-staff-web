@@ -76,7 +76,11 @@ export default function RealtimeProvider({ children }: { children: React.ReactNo
   const [, startTransition] = useTransition();
 
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_ADMIN_REALTIME === "0") return;
+
     let eventSource: EventSource | null = null;
+    let pollTimer: number | null = null;
+    let pollController: AbortController | null = null;
     let cancelled = false;
 
     const handleEvent = (message: MessageEvent<string>) => {
@@ -118,18 +122,54 @@ export default function RealtimeProvider({ children }: { children: React.ReactNo
       });
     };
 
+    const poll = async (cursor: string) => {
+      pollController?.abort();
+      const controller = new AbortController();
+      pollController = controller;
+
+      try {
+        const response = await fetch(`/api/realtime/poll?cursor=${encodeURIComponent(cursor)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return cursor;
+        const payload = await response.json() as { cursor?: unknown; events?: unknown };
+        if (Array.isArray(payload.events)) {
+          for (const event of payload.events) {
+            handleEvent(new MessageEvent("message", { data: JSON.stringify(event) }));
+          }
+        }
+        return typeof payload.cursor === "string" ? payload.cursor : cursor;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return cursor;
+        return cursor;
+      }
+    };
+
     // Let the initial admin shell paint before opening a long-lived network
     // connection. Realtime remains automatic, but no longer competes with the
     // first document and route data requests.
     const connectionTimer = window.setTimeout(() => {
       if (cancelled) return;
-      eventSource = new EventSource("/api/realtime/stream");
-      eventSource.addEventListener("message", handleEvent);
+      if (process.env.NEXT_PUBLIC_ADMIN_REALTIME === "poll") {
+        let cursor = new Date().toISOString();
+        const tick = async () => {
+          if (cancelled) return;
+          cursor = await poll(cursor);
+          if (!cancelled) pollTimer = window.setTimeout(() => void tick(), 10_000);
+        };
+        void tick();
+      } else {
+        eventSource = new EventSource("/api/realtime/stream");
+        eventSource.addEventListener("message", handleEvent);
+      }
     }, 600);
 
     return () => {
       cancelled = true;
       window.clearTimeout(connectionTimer);
+      if (pollTimer) window.clearTimeout(pollTimer);
+      pollController?.abort();
       eventSource?.removeEventListener("message", handleEvent);
       eventSource?.close();
     };

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import { ensureUserExists } from "@/app/actions/auth";
 import { getSystemSetting, saveSystemSetting } from "@/app/actions/systemSettings";
 import { isRequestContentLengthExceeded } from "@/lib/requestSize";
 import { createClient } from "@/utils/supabase/server";
 import { getLineIntegrationConfig, isLineLiveMutationEnabled } from "@/lib/lineApi";
+import { getImageInfo, transformImage, transformImageWithTextOverlays, type ImageTextOverlay } from "@/lib/cloudflare-images";
 
 // LINE Rich Menu canvas dimensions (fixed by LINE spec)
 const CANVAS_W = 2500;
@@ -73,15 +73,6 @@ async function readLineJson(response: Response) {
   return response.json().catch(() => ({})) as Promise<unknown>;
 }
 
-function escapeSvgText(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function isAllowedRichMenuImageUrl(value: string) {
   try {
     const url = new URL(value);
@@ -137,7 +128,7 @@ async function fetchRichMenuImageBuffer(imageUrl: string) {
     const buffer = Buffer.from(arrayBuffer);
     const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim() || "unknown";
     try {
-      const metadata = await sharp(buffer).metadata();
+      const metadata = await getImageInfo(buffer);
       if (!metadata.format || !metadata.width || !metadata.height) {
         throw new Error("Image metadata is incomplete.");
       }
@@ -150,63 +141,6 @@ async function fetchRichMenuImageBuffer(imageUrl: string) {
   } finally {
     clearTimeout(timeout);
   }
-}
-
-/**
- * Generates an SVG layer that composites text labels over each rich menu cell.
- * Each label is rendered inside a semi-transparent rounded-rectangle "pill" 
- * positioned at the geometric center of each area's bounds.
- */
-function buildLabelSvg(areas: RichMenuArea[]): Buffer {
-  const fontSize = 56;
-  const pillPaddingX = 40;
-  const pillPaddingY = 20;
-  const pillRadius = 20;
-
-  const shapes = areas
-    .filter((area) => area.showLabel !== false) // skip cells with showLabel=false
-    .map((area) => {
-    const label = escapeSvgText((area.label || "").trim());
-    if (!label) return "";
-
-    const cx = area.bounds.x + area.bounds.width / 2;
-    const cy = area.bounds.y + area.bounds.height / 2;
-
-    // Estimate pill width from label length (rough approximation for monospace-style)
-    const charWidth = fontSize * 0.65;
-    const pillW = label.length * charWidth + pillPaddingX * 2;
-    const pillH = fontSize + pillPaddingY * 2;
-
-    const pillX = cx - pillW / 2;
-    const pillY = cy - pillH / 2;
-
-    return `
-      <rect 
-        x="${pillX}" y="${pillY}" 
-        width="${pillW}" height="${pillH}" 
-        rx="${pillRadius}" ry="${pillRadius}"
-        fill="rgba(0,0,0,0.52)"
-      />
-      <text 
-        x="${cx}" y="${cy + fontSize * 0.36}"
-        font-family="Noto Sans Thai, Arial, sans-serif"
-        font-size="${fontSize}"
-        font-weight="700"
-        fill="white"
-        text-anchor="middle"
-        dominant-baseline="auto"
-        letter-spacing="1"
-      >${label}</text>
-    `;
-  });
-
-  const svgContent = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_W}" height="${CANVAS_H}">
-      ${shapes.join("\n")}
-    </svg>
-  `;
-
-  return Buffer.from(svgContent, "utf-8");
 }
 
 export async function POST(req: Request) {
@@ -280,35 +214,26 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Server-side text overlay using sharp
-    console.log("[Publish Pipeline] Step 3: Compositing text labels onto Rich Menu image with sharp");
+    // 3. Server-side text overlay using Cloudflare Images in Workers.
+    console.log("[Publish Pipeline] Step 3: Compositing text labels onto Rich Menu image");
     const areasWithLabels = menu.areas.filter((a) => a.label && a.label.trim());
     let processedBuffer: Buffer;
 
     try {
       if (areasWithLabels.length > 0) {
-        const svgOverlay = buildLabelSvg(menu.areas);
-
-        processedBuffer = await sharp(rawImageBuffer)
-          .resize(CANVAS_W, CANVAS_H, { fit: "cover", position: "center" })
-          .composite([
-            {
-              input: svgOverlay,
-              top: 0,
-              left: 0,
-            },
-          ])
-          .jpeg({ quality: 90, progressive: true })
-          .toBuffer();
+        const overlays: ImageTextOverlay[] = areasWithLabels.map((area) => ({
+          text: area.label?.trim() || "",
+          left: Math.max(0, Math.round(area.bounds.x + area.bounds.width / 2 - 160)),
+          top: Math.max(0, Math.round(area.bounds.y + area.bounds.height / 2 - 28)),
+          size: 56,
+        }));
+        processedBuffer = await transformImageWithTextOverlays(rawImageBuffer, { width: CANVAS_W, height: CANVAS_H, quality: 90, overlays });
       } else {
         // No labels – just resize to correct dimensions
-        processedBuffer = await sharp(rawImageBuffer)
-          .resize(CANVAS_W, CANVAS_H, { fit: "cover", position: "center" })
-          .jpeg({ quality: 90, progressive: true })
-          .toBuffer();
+        processedBuffer = await transformImage(rawImageBuffer, { width: CANVAS_W, height: CANVAS_H, fit: "cover", format: "jpeg", quality: 90 });
       }
     } catch (error: unknown) {
-      console.error("[Publish Pipeline] Failed to process Rich Menu image with sharp:", error);
+      console.error("[Publish Pipeline] Failed to process Rich Menu image:", error);
       return NextResponse.json(
         {
           error: "Rich Menu image could not be processed. Upload a valid JPEG, PNG, or WebP image.",

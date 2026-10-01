@@ -107,6 +107,7 @@ export const staffApiRoutes = new Elysia({
   .patch("/quotations/:id", adaptLegacyHandler(() => import("@/server/api/quotations/[id]/route"), "PATCH"))
   .post("/quotations/erpnext-sync", adaptLegacyHandler(() => import("@/server/api/quotations/erpnext-sync/route"), "POST"))
   .post("/quotations/sign", adaptLegacyHandler(() => import("@/server/api/quotations/sign/route"), "POST"))
+  .get("/realtime/poll", adaptLegacyHandler(() => import("@/server/api/realtime/poll/route"), "GET"))
   .get("/realtime/stream", adaptLegacyHandler(() => import("@/server/api/realtime/stream/route"), "GET"))
   .get("/refunds/:id/credit-note", adaptLegacyHandler(() => import("@/server/api/refunds/[id]/credit-note/route"), "GET"))
   .get("/requests", adaptLegacyHandler(() => import("@/server/api/requests/route"), "GET"))
@@ -212,4 +213,4 @@ export const staffApiRoutes = new Elysia({
   .post("/wizard/financial-report", adaptLegacyHandler(() => import("@/server/api/wizard/financial-report/route"), "POST"))
 ;
 
-export const staffApiRouteCount = 200;
+export const staffApiRouteCount = 201;

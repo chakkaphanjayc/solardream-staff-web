@@ -365,9 +365,9 @@ export async function processRichMenuScheduler(now = new Date()) {
   }
 
   return {
-    success: true,
+    success: results.every((result) => result.success),
     processedCount: schedules.length,
-    appliedCount: results.filter((result) => !result.skipped).length,
+    appliedCount: results.filter((result) => !result.skipped && result.success).length,
     skippedCount: results.filter((result) => result.skipped).length,
     results,
   };

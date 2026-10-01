@@ -1,8 +1,8 @@
 "use server";
 
-import { db } from "@/db";
+import { db, describeDatabaseError, withDatabaseRetry } from "@/db";
 import { consultationLeads, inboundRequests, proposals, salesContacts, salesCustomers, salesLegacyIdentityMappings, users } from "@/db/schema";
-import { eq, desc, and, like, or, isNull, sql } from "drizzle-orm";
+import { eq, desc, and, like, or, isNull, sql, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/auth-guard";
 import { verifyErpnextLead } from "@/app/actions/erpnextQuotation";
@@ -536,7 +536,7 @@ export async function getInboundRequests(options?: {
     // Reads run during the admin RSC render. Schema changes belong to Drizzle
     // migrations, not this request path; issuing additive DDL here caused a
     // slow response and repeated PostgreSQL "already exists" notices.
-    const conditions = [];
+    const conditions: SQL[] = [];
 
     if (options?.type) {
       conditions.push(eq(inboundRequests.requestType, options.type));
@@ -548,21 +548,20 @@ export async function getInboundRequests(options?: {
 
     if (options?.search && options.search.trim()) {
       const q = `%${options.search.trim().slice(0, 120)}%`;
-      conditions.push(
-        or(
-          like(inboundRequests.customerName, q),
-          like(inboundRequests.phone, q),
-          like(inboundRequests.email, q),
-          like(inboundRequests.source, q)
-        )
+      const searchCondition = or(
+        like(inboundRequests.customerName, q),
+        like(inboundRequests.phone, q),
+        like(inboundRequests.email, q),
+        like(inboundRequests.source, q)
       );
+      if (searchCondition) conditions.push(searchCondition);
     }
 
-    const rows = await db
+    const rows = await withDatabaseRetry(() => db
       .select()
       .from(inboundRequests)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(inboundRequests.createdAt));
+      .orderBy(desc(inboundRequests.createdAt)));
 
     return rows.map((r) => ({
       ...r,
@@ -570,7 +569,7 @@ export async function getInboundRequests(options?: {
       payload: (r.payload as Record<string, unknown>) || {},
     }));
   } catch (error) {
-    console.error("Error fetching inbound requests:", error);
+    console.error("Error fetching inbound requests:", describeDatabaseError(error));
     return [];
   }
 }

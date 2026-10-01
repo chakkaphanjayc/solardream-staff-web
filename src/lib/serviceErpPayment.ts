@@ -206,6 +206,7 @@ export async function syncRequestedServiceQuote(orderId: string) {
   if (!items.length) throw new Error("Service quotation sync requires at least one order item.");
   let customerId = order.erpCustomerId;
   if (!customerId) customerId = (await createErpnextCustomerIdempotently({ name: text(contact.fullName) || `Service Customer ${order.id.slice(0, 8)}`, email: text(contact.email), phone: text(contact.phone), address: order.serviceAddress || undefined })).customerId;
+  const title = `Service request ${servicePublicReference(order)}`;
   const marker = `SolarDream Service Request: ${order.id}`;
   const erpItems = items.map((item) => {
     const snapshot = record(item.offeringSnapshot);
@@ -223,21 +224,20 @@ export async function syncRequestedServiceQuote(orderId: string) {
   });
   const company = process.env.ERPNEXT_COMPANY_NAME?.trim();
   if (!company) throw new Error("ERPNEXT_COMPANY_NAME is required for service quotation sync.");
-  let quotationId = text(record(order.erpPayload).quotationId) || await findResourceName("Quotation", [["Quotation", "remarks", "=", marker]]);
+  let quotationId = text(record(order.erpPayload).quotationId) || await findResourceName("Quotation", [["title", "=", title]]);
   if (!quotationId) {
     const quotationData: Record<string, unknown> = {
         naming_series: "QTN-.YYYY.-",
         quotation_to: "Customer",
         party_name: customerId,
         customer: customerId,
-        title: `Service request ${servicePublicReference(order)}`,
+        title,
         transaction_date: today(),
         valid_till: new Date(Date.now() + 15 * 86400_000).toISOString().slice(0, 10),
         company,
         currency: "THB",
         selling_price_list: process.env.ERPNEXT_SELLING_PRICE_LIST || "Standard Selling",
-        remarks: marker,
-        terms: serviceTermsFor(erpItems),
+        terms: `${serviceTermsFor(erpItems)}\n\n${marker}`,
         items: erpItems,
     };
     const requestTypeField = process.env.ERPNEXT_QUOTATION_REQUEST_TYPE_FIELD?.trim();

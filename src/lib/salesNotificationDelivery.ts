@@ -5,7 +5,7 @@ import { and, eq, or } from "drizzle-orm";
 import { db } from "@/db";
 import { inboundRequests, integrationOutbox, paymentRequests, proposals, users } from "@/db/schema";
 import { getDiscordWebhookUrl, sendDiscordSalesLifecycleNotification } from "@/lib/discord";
-import { pushMessageToLine } from "@/lib/linePush";
+import { isValidLineUserId, pushMessageToLine } from "@/lib/linePush";
 import { getConfiguredPublicSiteUrl } from "@/lib/siteUrl";
 import {
   getSalesNotificationEventForTopic,
@@ -261,6 +261,9 @@ function buildLineMessage(target: NotificationTarget) {
 async function dispatchLine(target: NotificationTarget): Promise<ChannelResult> {
   if (!target.lineUserId) {
     return { channel: "line", success: true, skipped: true, error: "Customer has not linked a LINE account." };
+  }
+  if (!isValidLineUserId(target.lineUserId)) {
+    return { channel: "line", success: true, skipped: true, error: "Customer has an invalid stored LINE user ID." };
   }
   if (target.lineBlocked) {
     return { channel: "line", success: true, skipped: true, error: "Customer is marked as blocked by LINE." };

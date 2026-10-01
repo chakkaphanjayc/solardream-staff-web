@@ -1,7 +1,6 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import sharp from "sharp";
 import { revalidatePath } from "next/cache";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -12,6 +11,7 @@ import { compileLineRichMenuPayload, lineRichMenuDocumentSchema, RICH_MENU_CANVA
 import { getLineIntegrationConfig, isLineLiveMutationEnabled, LINE_API_BASE_URL, LINE_DATA_API_BASE_URL, requestLineApi } from "@/lib/lineApi";
 import { setDefaultRichMenuForAllUsers } from "@/lib/linePush";
 import { recordAuditEventBestEffort } from "@/lib/auditLog";
+import { getImageInfo, transformImage } from "@/lib/cloudflare-images";
 
 const MAX_ARTWORK_BYTES = 10 * 1024 * 1024;
 const artworkInputSchema = z.object({
@@ -74,7 +74,7 @@ export async function uploadLineRichMenuArtwork(formData: FormData) {
     const { validateUploadFile } = await import("@/lib/fileValidation");
     const validated = await validateUploadFile({ file, allowedKinds: ["jpeg", "png", "webp"], fallbackName: "rich-menu-artwork", maxBytes: MAX_ARTWORK_BYTES });
     const bytes = Buffer.from(await file.arrayBuffer());
-    const metadata = await sharp(bytes).metadata();
+    const metadata = await getImageInfo(bytes);
     if (!metadata.width || !metadata.height) return { success: false as const, error: "Artwork dimensions could not be read." };
     const aspect = metadata.width / metadata.height;
     const expectedAspect = RICH_MENU_CANVAS.width / RICH_MENU_CANVAS.height;
@@ -145,11 +145,11 @@ async function fetchArtwork(value: string) {
   if (!response.ok) throw new Error("Artwork could not be downloaded from storage.");
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.byteLength > MAX_ARTWORK_BYTES) throw new Error("Artwork is larger than 10 MB.");
-  const metadata = await sharp(bytes).metadata();
+  const metadata = await getImageInfo(bytes);
   if (!metadata.width || !metadata.height) throw new Error("Artwork dimensions could not be read.");
   const aspect = metadata.width / metadata.height;
   if (Math.abs(aspect - RICH_MENU_CANVAS.width / RICH_MENU_CANVAS.height) > 0.02) throw new Error("Artwork does not match the LINE Rich Menu ratio.");
-  return sharp(bytes).resize(RICH_MENU_CANVAS.width, RICH_MENU_CANVAS.height, { fit: "cover", position: "center" }).jpeg({ quality: 90, progressive: true }).toBuffer();
+  return transformImage(bytes, { width: RICH_MENU_CANVAS.width, height: RICH_MENU_CANVAS.height, fit: "cover", format: "jpeg", quality: 90 });
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
