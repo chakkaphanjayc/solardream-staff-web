@@ -1,12 +1,14 @@
 import React from "react";
+import { connection } from "next/server";
 import { getUser, ensureUserExists } from "@/app/actions/auth";
 import { getInstallerTickets } from "@/app/actions/tickets";
 import { getInstallerJobList } from "@/app/actions/workflows";
 import { redirect } from "next/navigation";
 import InstallerPortalClient from "./InstallerPortalClient";
 
-
 export default async function InstallerPage() {
+  await connection();
+
   const supabaseUser = await getUser();
 
   if (!supabaseUser) {

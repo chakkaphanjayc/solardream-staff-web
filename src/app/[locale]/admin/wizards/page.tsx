@@ -1,11 +1,13 @@
+import { connection } from "next/server";
 import { getWizardsForExchange } from "@/app/actions/wizard";
 import DeleteWizardButton from "@/components/admin/DeleteWizardButton";
 import Link from "next/link";
 import { BadgePercent, Plus, Settings2, Edit3, Settings } from "@/components/ui/icons";
 import WizardsDataTools from "./WizardsDataTools";
 
-
 export default async function WizardsListPage() {
+  await connection();
+
   const wizards = await getWizardsForExchange();
 
   return (
