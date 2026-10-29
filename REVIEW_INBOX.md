@@ -4,4 +4,4 @@
 - **Verification**: Passed (`npm run typecheck`, `npm run test`, scoped `npx eslint`); `npm run lint` reports 69 existing errors and 223 warnings in unrelated files.
 - **Key Decision / Risk**:
   - `requireStaff()` and its server redirect remain unchanged; the fallback contains only a generic loading skeleton.
-  - Authenticated admin pages could not be exercised without a staff account; signed-out redirect and login runtime were verified.
+  - Authenticated admin pages need a staff account; PR #1 is open, and GitHub prevents author self-approval.
