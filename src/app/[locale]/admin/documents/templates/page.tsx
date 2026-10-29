@@ -14,7 +14,7 @@ export default async function AdminDocumentTemplatesPage() {
   const result = await listDocumentTemplatesAction();
 
   return (
-    <main className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px]">
         <header className="mb-6 border-b border-[#30363d] pb-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#58a6ff]">Document control</p>
@@ -25,6 +25,6 @@ export default async function AdminDocumentTemplatesPage() {
         </header>
         <DocumentTemplateEditor initialTemplates={result.templates} initialError={result.success ? undefined : result.error} />
       </div>
-    </main>
+    </div>
   );
 }

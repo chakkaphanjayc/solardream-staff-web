@@ -113,9 +113,17 @@ export default function AuthSplitLayout({
         <div className="blob-organic-1 pointer-events-none absolute -top-20 -left-20 h-80 w-80 bg-[#B7D1EA]/15 blur-3xl" />
         <div className="blob-organic-2 pointer-events-none absolute -bottom-20 -right-20 h-80 w-80 bg-[#DCE8F5]/35 blur-3xl" />
 
-        <div className="solar-auth-content relative z-10 mx-auto mt-12 w-full max-w-xl sm:mt-16">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          aria-labelledby="auth-page-title"
+          className="solar-auth-content relative z-10 mx-auto mt-12 w-full max-w-xl sm:mt-16"
+        >
           <div className="solar-auth-heading min-w-0 space-y-3">
-            <h1 className="text-balance font-serif text-4xl font-bold leading-[1.1] tracking-[-0.02em] text-[#1C1C1A] sm:text-5xl">
+            <h1
+              id="auth-page-title"
+              className="text-balance font-serif text-4xl font-bold leading-[1.1] tracking-[-0.02em] text-[#1C1C1A] sm:text-5xl"
+            >
               {title}
             </h1>
             <p className="max-w-[62ch] text-pretty text-sm font-medium leading-7 text-[#4E4B44] sm:text-base">
@@ -141,7 +149,7 @@ export default function AuthSplitLayout({
               {t("contactSupport")}
             </Link>
           </p>
-        </div>
+        </main>
       </section>
 
       {/* ─── RIGHT COLUMN (Image with Manga Slanted Cut) ─── */}

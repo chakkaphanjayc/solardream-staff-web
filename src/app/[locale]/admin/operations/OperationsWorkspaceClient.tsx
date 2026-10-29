@@ -97,19 +97,19 @@ export default function OperationsWorkspaceClient({ enabled, initial }: { enable
 
   if (!enabled) {
     return (
-      <main data-bagui="operations-workspace" className="min-h-full bg-[#0d1117] px-4 py-8 text-[#c9d1d9] sm:px-6 lg:px-8">
+      <div data-bagui="operations-workspace" className="min-h-full bg-[#0d1117] px-4 py-8 text-[#c9d1d9] sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl rounded-xl border border-[#30363d] bg-[#161b22] p-8 shadow-2xl">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#21262d] text-[#58a6ff]"><SlidersHorizontal className="h-5 w-5" aria-hidden="true" /></div>
           <h1 className="mt-5 text-2xl font-semibold text-[#f0f6fc]">Operations workspace is staged</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-[#8b949e]">Enable OPS_V2_PROJECTS in Feature toggles when the team is ready to expose the canonical project read model.</p>
           <Link href={"/" + locale + "/admin/settings/feature-toggles"} className={cn(buttonVariants({ variant: "primary", size: "sm" }), "mt-6")}>Open feature toggles <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main data-bagui="operations-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div data-bagui="operations-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px] space-y-6">
         <header className="flex flex-col gap-5 border-b border-[#30363d] pb-6 xl:flex-row xl:items-end xl:justify-between">
           <div>
@@ -166,6 +166,6 @@ export default function OperationsWorkspaceClient({ enabled, initial }: { enable
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

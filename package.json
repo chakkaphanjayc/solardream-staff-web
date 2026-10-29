@@ -34,7 +34,7 @@
     "deploy": "npm run build:cloudflare && opennextjs-cloudflare deploy",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint .",
-    "test": "jest",
+    "test": "node scripts/run-tests.mjs",
     "elysia:test": "node scripts/elysia/run-smoke-test.mjs",
     "test:upload-validation": "tsx scripts/security/verify-upload-validation.ts",
     "test:domain-routing": "tsx scripts/security/verify-domain-routing.ts",

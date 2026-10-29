@@ -162,7 +162,7 @@ export default function SalesThreadClient({
   };
 
   return (
-    <main className="sd-page-shell min-h-dvh bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div className="sd-page-shell min-h-dvh bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-[90rem] space-y-6">
         <header className="flex min-w-0 flex-col gap-5 border-b border-[#30363d] pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
@@ -313,6 +313,6 @@ export default function SalesThreadClient({
         entityLabel={auditTarget?.customerName}
         emptyMessage={t("audit.empty")}
       />
-    </main>
+    </div>
   );
 }

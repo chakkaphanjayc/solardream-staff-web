@@ -202,7 +202,7 @@ export default function DataManagerClient({ resources, initialRows }: DataManage
   }
 
   return (
-    <main className="min-h-full bg-[#0d1117] p-5 text-[#c9d1d9] sm:p-8">
+    <div className="min-h-full bg-[#0d1117] p-5 text-[#c9d1d9] sm:p-8">
       {/* Header */}
       <header className="mx-auto max-w-7xl border-b border-[#30363d] pb-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -507,6 +507,6 @@ export default function DataManagerClient({ resources, initialRows }: DataManage
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
