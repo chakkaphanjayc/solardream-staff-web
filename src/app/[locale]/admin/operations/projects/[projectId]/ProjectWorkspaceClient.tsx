@@ -403,20 +403,20 @@ export default function ProjectWorkspaceClient({
   }, [workspace]);
 
   if (!enabled) {
-    return <main className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]"><div className="mx-auto max-w-3xl rounded-xl border border-[#30363d] bg-[#161b22] p-8"><h1 className="text-2xl font-semibold text-[#f0f6fc]">Project workspace is staged</h1><p className="mt-2 text-sm leading-6 text-[#8b949e]">Enable OPS_V2_PROJECTS and OPS_V2_PROJECT_WORKSPACE to open this canonical workspace.</p></div></main>;
+    return <div className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]"><div className="mx-auto max-w-3xl rounded-xl border border-[#30363d] bg-[#161b22] p-8"><h1 className="text-2xl font-semibold text-[#f0f6fc]">Project workspace is staged</h1><p className="mt-2 text-sm leading-6 text-[#8b949e]">Enable OPS_V2_PROJECTS and OPS_V2_PROJECT_WORKSPACE to open this canonical workspace.</p></div></div>;
   }
 
   if (isLoading && !workspace) {
-    return <main className="flex min-h-full items-center justify-center bg-[#0d1117] text-[#8b949e]"><Loader2 className="h-6 w-6 animate-spin" aria-label="Loading project workspace" /></main>;
+    return <div className="flex min-h-full items-center justify-center bg-[#0d1117] text-[#8b949e]"><Loader2 className="h-6 w-6 animate-spin" aria-label="Loading project workspace" /></div>;
   }
 
   if (!workspace) {
-    return <main className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]"><div className="mx-auto max-w-3xl rounded-xl border border-[#f85149]/40 bg-[#161b22] p-8"><h1 className="text-2xl font-semibold text-[#f0f6fc]">Project unavailable</h1><p className="mt-2 text-sm text-[#ff7b72]">{error || "The project workspace could not be loaded."}</p><Button className="mt-5" size="sm" variant="outline" onClick={() => void loadWorkspace()}><RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry</Button></div></main>;
+    return <div className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]"><div className="mx-auto max-w-3xl rounded-xl border border-[#f85149]/40 bg-[#161b22] p-8"><h1 className="text-2xl font-semibold text-[#f0f6fc]">Project unavailable</h1><p className="mt-2 text-sm text-[#ff7b72]">{error || "The project workspace could not be loaded."}</p><Button className="mt-5" size="sm" variant="outline" onClick={() => void loadWorkspace()}><RefreshCw className="h-4 w-4" aria-hidden="true" /> Retry</Button></div></div>;
   }
 
   const project = workspace.project;
   return (
-    <main data-bagui="project-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div data-bagui="project-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px] space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Link href={"/" + locale + "/admin/operations"} className="inline-flex items-center gap-2 text-sm font-medium text-[#8b949e] hover:text-[#f0f6fc]"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Operations workspace</Link>
@@ -500,6 +500,6 @@ export default function ProjectWorkspaceClient({
           <div className="rounded-xl border border-[#30363d] bg-[#161b22] p-5"><div className="flex items-center gap-2 text-sm font-semibold text-[#f0f6fc]"><ClipboardCheck className="h-4 w-4 text-[#e3b341]" aria-hidden="true" /> Service cases</div><div className="mt-3 space-y-2">{workspace.serviceCases.length === 0 ? <p className="text-xs text-[#8b949e]">No after-sales cases.</p> : workspace.serviceCases.map((item) => <div key={item.id} className="rounded-md bg-[#0d1117] p-3 text-xs"><p className="font-medium text-[#c9d1d9]">{item.caseNumber} · {item.subject}</p><p className="mt-1 text-[#8b949e]">{item.priority} · {item.status}</p></div>)}</div></div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

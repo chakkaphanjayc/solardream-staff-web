@@ -351,7 +351,7 @@ export default function DispatchQuotationsClient({
             </div>
           </aside>
 
-          <main className="rounded-[2rem] border border-[#1E293B] bg-[#0F172A]/80 p-5 shadow-none backdrop-blur sm:p-6">
+          <div className="rounded-[2rem] border border-[#1E293B] bg-[#0F172A]/80 p-5 shadow-none backdrop-blur sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-[#0369a1]">
@@ -423,7 +423,7 @@ export default function DispatchQuotationsClient({
                 </div>
               ) : null}
             </section>
-          </main>
+          </div>
         </section>
       ) : (
         <section className="rounded-[2rem] border border-[#1E293B] bg-[#0F172A]/80 p-8 text-center shadow-none">

@@ -215,17 +215,17 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
 
   if (!enabled) {
     return (
-      <main data-bagui="schedule-workspace" className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]">
+      <div data-bagui="schedule-workspace" className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]">
         <div className="mx-auto max-w-3xl rounded-xl border border-[#30363d] bg-[#161b22] p-8">
           <h1 className="text-2xl font-semibold text-[#f0f6fc]">Schedule workspace is staged</h1>
           <p className="mt-2 text-sm leading-6 text-[#8b949e]">Enable OPS_V2_SCHEDULING when canonical visits, material readiness, and assignment checks are ready for schedulers.</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main data-bagui="schedule-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div data-bagui="schedule-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Link href={"/" + locale + "/admin/operations"} className="inline-flex items-center gap-2 text-sm font-medium text-[#8b949e] hover:text-[#f0f6fc]"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Operations workspace</Link>
@@ -290,6 +290,6 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
         {isLoading ? <div className="flex items-center justify-center gap-2 text-xs text-[#8b949e]"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Refreshing schedule</div> : null}
         <Link href={"/" + locale + "/admin/settings/feature-toggles"} className={cn(buttonVariants({ variant: "quiet", size: "sm" }), "text-[#8b949e]")}>Manage rollout flags</Link>
       </div>
-    </main>
+    </div>
   );
 }

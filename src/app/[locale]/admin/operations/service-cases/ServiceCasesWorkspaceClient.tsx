@@ -91,11 +91,11 @@ export default function ServiceCasesWorkspaceClient({ enabled }: { enabled: bool
   };
 
   if (!enabled) {
-    return <main className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]"><div className="mx-auto max-w-3xl rounded-xl border border-[#30363d] bg-[#161b22] p-8"><h1 className="text-2xl font-semibold text-[#f0f6fc]">After-sales workspace is staged</h1><p className="mt-2 text-sm leading-6 text-[#8b949e]">Enable OPS_V2_AFTER_SALES when the new customer service workflow is ready for staff.</p></div></main>;
+    return <div className="min-h-full bg-[#0d1117] p-8 text-[#c9d1d9]"><div className="mx-auto max-w-3xl rounded-xl border border-[#30363d] bg-[#161b22] p-8"><h1 className="text-2xl font-semibold text-[#f0f6fc]">After-sales workspace is staged</h1><p className="mt-2 text-sm leading-6 text-[#8b949e]">Enable OPS_V2_AFTER_SALES when the new customer service workflow is ready for staff.</p></div></div>;
   }
 
   return (
-    <main data-bagui="after-sales-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div data-bagui="after-sales-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1400px] space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Link href={"/" + locale + "/admin/operations"} className="inline-flex items-center gap-2 text-sm font-medium text-[#8b949e] hover:text-[#f0f6fc]"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Operations workspace</Link>
@@ -111,6 +111,6 @@ export default function ServiceCasesWorkspaceClient({ enabled }: { enabled: bool
           {loading && cases.length === 0 ? <div className="flex items-center gap-2 p-8 text-sm text-[#8b949e]"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading cases…</div> : cases.length === 0 ? <div className="p-12 text-center text-sm text-[#8b949e]">No service cases match this filter.</div> : <div className="divide-y divide-[#21262d]">{cases.map((item) => <article key={item.id} className="p-5 transition-colors hover:bg-[#1c2128]"><div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs text-[#79c0ff]">{item.caseNumber}</span><span className="rounded-full border border-[#30363d] bg-[#21262d] px-2 py-1 text-[11px] font-semibold text-[#c9d1d9]">{titleCase(item.priority)}</span><span className="rounded-full border border-[#d29922]/40 bg-[#d29922]/10 px-2 py-1 text-[11px] font-semibold text-[#e3b341]">{titleCase(item.type)}</span></div><h2 className="mt-3 text-base font-semibold text-[#f0f6fc]">{item.subject}</h2><p className="mt-2 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-[#8b949e]">{item.description}</p><p className="mt-3 text-xs text-[#6e7681]">Customer {item.customerUserId} · Opened {dateLabel(item.createdAt)} · SLA {dateLabel(item.slaDueAt)}</p></div><div className="flex shrink-0 items-center gap-3"><label className="text-xs text-[#8b949e]">Status<select value={item.status} onChange={(event) => void updateStatus(item, event.target.value)} disabled={busyId === item.id} className="mt-1 min-h-10 w-48 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#c9d1d9]">{STATUSES.map((status) => <option key={status} value={status}>{titleCase(status)}</option>)}</select></label>{busyId === item.id ? <Loader2 className="h-4 w-4 animate-spin text-[#79c0ff]" aria-label="Updating case" /> : item.status === "RESOLVED" || item.status === "CLOSED" ? <CheckCircle2 className="h-5 w-5 text-[#7ee787]" aria-label="Case resolved" /> : null}</div></div></article>)}</div>}
         </section>
       </div>
-    </main>
+    </div>
   );
 }
