@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Follow the repository's `AGENTS.md` for implementation and verification. Work autonomously on routine changes without confirmation prompts, preserve unrelated work, run `npm run typecheck`, `npm run lint`, and `npm run test`, and record important security, schema, payment, public-contract, or architecture changes in `REVIEW_INBOX.md`.

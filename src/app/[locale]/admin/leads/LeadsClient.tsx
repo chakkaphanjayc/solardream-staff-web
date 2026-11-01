@@ -122,6 +122,9 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
     isLoading: boolean;
   } | null>(null);
   const auditLoadRef = useRef(0);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const drawerOpenerRef = useRef<HTMLElement | null>(null);
+  const isDrawerOpen = selectedLead !== null;
 
   const openAuditSidebar = (lead: LeadRecord) => {
     const requestId = auditLoadRef.current + 1;
@@ -148,17 +151,60 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
   };
 
   useEffect(() => {
-    if (selectedLead) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
+    if (!isDrawerOpen) return;
+    const drawer = drawerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    const focusableSelector = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(",");
+    document.body.style.overflow = "hidden";
+    const initialFocus = drawer?.querySelector<HTMLElement>("[data-drawer-initial-focus]")
+      ?? drawer?.querySelector<HTMLElement>(focusableSelector)
+      ?? drawer;
+    initialFocus?.focus();
+
+    const handleDrawerKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSelectedLead(null);
+        return;
+      }
+      if (event.key !== "Tab" || !drawer) return;
+      const focusableElements = Array.from(drawer.querySelectorAll<HTMLElement>(focusableSelector));
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        drawer.focus();
+        return;
+      }
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-  }, [selectedLead]);
+    document.addEventListener("keydown", handleDrawerKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleDrawerKeyDown);
+      drawerOpenerRef.current?.focus({ preventScroll: true });
+      drawerOpenerRef.current = null;
+    };
+  }, [isDrawerOpen]);
 
   const handleRowClick = (lead: LeadRecord) => {
+    if (document.activeElement instanceof HTMLElement) {
+      drawerOpenerRef.current = document.activeElement;
+    }
     setSelectedLead(lead);
     setEditStatus(normalizeLeadStatus(lead.status));
     setEditNotes(lead.notes || "");
@@ -274,8 +320,17 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
         </div>
       </div>
 
-      {/* Summary Telemetry Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Keep the summary compact on phones so the lead queue starts near the top. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-[#1E293B] bg-[#0F172A] px-3 py-2 sm:hidden" role="group" aria-label="Lead summary metrics">
+        <span className="whitespace-nowrap text-[11px] text-gray-300">Total <strong className="text-gray-100">{totalCount}</strong></span>
+        <span className="whitespace-nowrap text-[11px] text-sky-300">New <strong>{newCount}</strong></span>
+        <span className="whitespace-nowrap text-[11px] text-amber-300">Contacted <strong>{contactedCount}</strong></span>
+        <span className="whitespace-nowrap text-[11px] text-indigo-300">Qualified <strong>{qualifiedCount}</strong></span>
+        <span className="whitespace-nowrap text-[11px] text-emerald-300">Won <strong>{wonCount}</strong></span>
+      </div>
+
+      {/* Summary telemetry metrics grid */}
+      <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-5">
         <div className="p-5 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-none flex items-center gap-4">
           <div className="w-10 h-10 bg-[#0B1121] border border-[#1E293B] rounded-xl flex items-center justify-center text-gray-400">
             <FileText className="w-5 h-5" />
@@ -335,9 +390,10 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
           <input
             type="text"
             placeholder="Search by name, email, phone..."
+            aria-label="Search leads"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#0B1121] border border-[#1E293B] focus:border-[#B7D1EA] focus:bg-[#0F172A] rounded-xl text-xs font-bold text-gray-100 focus:outline-none transition-all placeholder:text-gray-500 placeholder:font-semibold"
+            className="min-h-11 w-full rounded-xl border border-[#1E293B] bg-[#0B1121] py-2 pl-10 pr-4 text-xs font-bold text-gray-100 transition-all placeholder:font-semibold placeholder:text-gray-500 focus:border-[#B7D1EA] focus:bg-[#0F172A] focus:outline-none"
           />
         </div>
 
@@ -348,7 +404,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
               key={status}
               onClick={() => setStatusFilter(status)}
               className={cn(
-                "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                "min-h-11 rounded-lg px-3 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer",
                 statusFilter === status
                   ? "bg-slate-900 text-white shadow-none border border-slate-900"
                   : "bg-[#0B1121] text-gray-400 hover:text-gray-100 border border-[#1E293B]"
@@ -360,7 +416,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
         </div>
       </div>
 
-      {/* Leads Table */}
+      {/* Leads */}
       <AdminBulkActionBar
         selectedCount={selection.selectedCount}
         visibleCount={filteredLeads.length}
@@ -379,7 +435,63 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
           },
         ]}
       />
-      <div className="bg-[#0F172A] border border-[#1E293B] rounded-xl overflow-hidden shadow-none">
+      <section className="space-y-3 sm:hidden" aria-label="Lead results">
+        {filteredLeads.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[#1E293B] px-4 py-10 text-center text-sm text-gray-400">
+            No leads found matching query.
+          </div>
+        ) : filteredLeads.map((lead) => {
+          const snap = getLeadConfigurationSnapshot(lead.configurationSnapshot);
+          return (
+            <article key={lead.id} className="rounded-xl border border-[#1E293B] bg-[#0F172A] p-4">
+              <div className="flex items-start gap-3">
+                <AdminSelectionCheckbox
+                  checked={selection.isSelected(lead.id)}
+                  disabled={isBulkActionPending}
+                  label={`Select lead ${lead.name}`}
+                  onChange={() => selection.toggle(lead.id)}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <h2 className="break-words text-sm font-bold text-gray-100">{lead.name}</h2>
+                    <span className={cn(
+                      "rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide",
+                      lead.status === "NEW" && "border-sky-500/20 bg-sky-500/10 text-sky-300",
+                      lead.status === "CONTACTED" && "border-amber-500/20 bg-amber-500/10 text-amber-300",
+                      lead.status === "QUALIFIED" && "border-indigo-500/20 bg-indigo-500/10 text-indigo-300",
+                      lead.status === "WON" && "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+                      lead.status === "LOST" && "border-rose-500/20 bg-rose-500/10 text-rose-300",
+                    )}>{lead.status}</span>
+                  </div>
+                  <div className="mt-2 space-y-1 text-xs">
+                    <a className="block min-h-6 break-all text-gray-300 underline-offset-2 hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a>
+                    <a className="block min-h-6 text-gray-300 underline-offset-2 hover:underline" href={`tel:${lead.phone}`}>{lead.phone}</a>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-[#1E293B] pt-3 text-xs">
+                    <div className="space-y-1 text-gray-400">
+                      <p>{snap ? `${snap.items?.length || 0} configured components` : "No configuration snapshot available"}</p>
+                      {snap ? <p className="font-mono text-[#D8A87B]">{formatPrice(snap.totalPrice || 0)}</p> : null}
+                    </div>
+                    <p className="inline-flex items-center gap-1.5 text-gray-400">
+                      <Calendar className="size-3.5" aria-hidden="true" />
+                      {new Date(lead.createdAt).toLocaleDateString("th-TH")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRowClick(lead)}
+                    className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[#B7D1EA]/40 bg-[#0B1121] px-4 text-xs font-bold text-[#B7D1EA] transition-colors hover:bg-[#B7D1EA] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA]"
+                  >
+                    View lead details
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+
+      <div className="hidden overflow-hidden rounded-xl border border-[#1E293B] bg-[#0F172A] shadow-none xl:block">
         <div className="overflow-x-auto">
           <table className="min-w-[820px] w-full text-left border-collapse">
             <thead>
@@ -492,23 +604,33 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
 
       {/* CRM Detail Slide-over Drawer */}
       {selectedLead && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-50 flex justify-end" role="presentation">
           {/* Backdrop */}
-          <div 
+          <div
+            aria-hidden="true"
             className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
             onClick={() => setSelectedLead(null)}
           />
 
           {/* Drawer Container */}
-          <GsapReveal from="right" className="relative z-50 flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-[#1E293B] bg-[#0F172A] p-6 shadow-none">
+          <GsapReveal from="right" className="relative z-50 h-full w-full max-w-lg">
+          <div
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lead-details-title"
+            aria-describedby="lead-details-reference"
+            tabIndex={-1}
+            className="flex h-full w-full flex-col overflow-y-auto border-l border-[#1E293B] bg-[#0F172A] p-6 shadow-none focus:outline-none"
+          >
             
             {/* Header */}
             <div className="flex justify-between items-start pb-4 border-b border-[#1E293B]">
               <div>
-                <h3 className="text-base font-black text-gray-100 uppercase">
+                <h3 id="lead-details-title" className="text-base font-black text-gray-100 uppercase">
                   Lead Details & Sizing Config
                 </h3>
-                <p className="text-[9px] text-gray-500 font-bold uppercase mt-0.5 tracking-widest">
+                <p id="lead-details-reference" className="text-[9px] text-gray-500 font-bold uppercase mt-0.5 tracking-widest">
                   Lead ID: {selectedLead.id.substring(0, 8).toUpperCase()}
                 </p>
               </div>
@@ -516,14 +638,16 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                 <AuditLogTrigger
                   onClick={() => openAuditSidebar(selectedLead)}
                   label="Logs"
-                  className="min-h-9 px-2 text-[10px]"
+                  className="min-h-11 px-3 text-[10px]"
                 />
                 <button
+                  type="button"
                   onClick={() => setSelectedLead(null)}
+                  data-drawer-initial-focus
                   aria-label="Close lead details"
-                  className="p-1.5 hover:bg-[#0B1121] rounded-full transition-colors cursor-pointer text-gray-500 hover:text-gray-300"
+                  className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-gray-300 transition-colors hover:bg-[#0B1121] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA]"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="size-5" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -533,7 +657,11 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
               
               {/* Telemetry updates status banner */}
               {statusMsg && (
-                <div className={cn(
+                <div
+                  role={statusMsg.includes("Error") || statusMsg.includes("Failed") ? "alert" : "status"}
+                  aria-live={statusMsg.includes("Error") || statusMsg.includes("Failed") ? "assertive" : "polite"}
+                  aria-atomic="true"
+                  className={cn(
                   "p-3 rounded-xl text-xs font-bold border",
                   statusMsg.includes("Error") || statusMsg.includes("Failed")
                     ? "bg-rose-500/10 border-rose-500/20 text-rose-300"
@@ -609,11 +737,12 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                 
                 <div className="grid grid-cols-2 gap-3 items-end">
                   <div className="space-y-1">
-                    <label className="text-[8px] font-black uppercase text-gray-500">Status</label>
+                    <label htmlFor="lead-status" className="text-[8px] font-black uppercase text-gray-400">Status</label>
                     <select
+                      id="lead-status"
                       value={editStatus}
                       onChange={(e) => setEditStatus(e.target.value as LeadStatus)}
-                      className="w-full p-2 bg-[#0F172A] border border-[#1E293B] rounded-xl text-xs font-bold text-gray-100 focus:outline-none focus:border-[#B7D1EA]"
+                      className="min-h-11 w-full rounded-xl border border-[#1E293B] bg-[#0F172A] p-2 text-xs font-bold text-gray-100 focus:outline-none focus:border-[#B7D1EA]"
                     >
                       <option value="NEW">NEW</option>
                       <option value="CONTACTED">CONTACTED</option>
@@ -626,15 +755,16 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="py-2.5 bg-[#B7D1EA] hover:bg-[#99BFE3] text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-none shadow-[#B7D1EA]/10"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#B7D1EA] px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-[#0F172A] shadow-none transition-all hover:bg-[#99BFE3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Save Changes
                   </button>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[8px] font-black uppercase text-gray-500">Admin CRM Notes</label>
+                  <label htmlFor="lead-notes" className="text-[8px] font-black uppercase text-gray-400">Admin CRM Notes</label>
                   <textarea
+                    id="lead-notes"
                     rows={3}
                     placeholder="Log status notes (e.g., Called client to schedule site visit on next Monday...)"
                     value={editNotes}
@@ -727,6 +857,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                 </div>
               )}
             </form>
+          </div>
           </GsapReveal>
         </div>,
         document.body

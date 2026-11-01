@@ -4260,6 +4260,7 @@
     "searchConsole": "Search console…",
     "openNavigation": "Open admin navigation",
     "closeNavigation": "Close admin navigation",
+    "navigationDialog": "Admin navigation",
     "breadcrumbsLabels": {
       "admin": "Admin",
       "sales": "Sales",
@@ -5186,6 +5187,7 @@
     },
     "tabs": {
       "label": "Sales pipeline views",
+      "mobileHint": "Swipe to see more views",
       "leads": "Leads ({count})",
       "quotations": "Quotations ({count})",
       "threads": "Customer threads ({count})",

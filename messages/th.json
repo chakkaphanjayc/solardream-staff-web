@@ -4260,6 +4260,7 @@
     "searchConsole": "ค้นหาคอนโซล…",
     "openNavigation": "เปิดเมนูผู้ดูแล",
     "closeNavigation": "ปิดเมนูผู้ดูแล",
+    "navigationDialog": "เมนูผู้ดูแล",
     "breadcrumbsLabels": {
       "admin": "ผู้ดูแล",
       "sales": "ฝ่ายขาย",
@@ -5186,6 +5187,7 @@
     },
     "tabs": {
       "label": "มุมมองกระบวนการขาย",
+      "mobileHint": "ปัดเพื่อดูมุมมองเพิ่มเติม",
       "leads": "ลูกค้าเป้าหมาย ({count})",
       "quotations": "ใบเสนอราคา ({count})",
       "threads": "สายสัมพันธ์ลูกค้า ({count})",

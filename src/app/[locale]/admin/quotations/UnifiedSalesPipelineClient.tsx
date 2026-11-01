@@ -93,6 +93,7 @@ type Props = {
 };
 
 type PipelineView = "leads" | "quotations" | "threads" | "customers";
+const PIPELINE_VIEWS: readonly PipelineView[] = ["leads", "quotations", "threads", "customers"];
 type LeadGroupBy = "none" | "status" | "type" | "source";
 type ThreadFilter = "all" | "complete" | "attention";
 type ThreadGroupBy = "none" | "completion" | "status";
@@ -124,6 +125,7 @@ export default function UnifiedSalesPipelineClient({
         ? "leads"
         : "quotations";
   const [activeView, setActiveView] = useState<PipelineView>(initialView);
+  const pipelineTabRefs = useRef<Partial<Record<PipelineView, HTMLButtonElement>>>({});
   const requestedLeadId = searchParams.get("lead");
   const initialSelectedRequest = requestedLeadId
     ? initialInboundRequests.find(
@@ -335,6 +337,21 @@ export default function UnifiedSalesPipelineClient({
     nextParams.delete("tab");
     nextParams.set("view", view);
     router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  };
+
+  const handlePipelineTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, currentView: PipelineView) => {
+    const currentIndex = PIPELINE_VIEWS.indexOf(currentView);
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % PIPELINE_VIEWS.length;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + PIPELINE_VIEWS.length) % PIPELINE_VIEWS.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = PIPELINE_VIEWS.length - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextView = PIPELINE_VIEWS[nextIndex];
+    setPipelineView(nextView);
+    pipelineTabRefs.current[nextView]?.focus();
   };
 
   // Create Manual Lead Form State
@@ -704,11 +721,16 @@ export default function UnifiedSalesPipelineClient({
           <div className="inline-flex w-full gap-1 overflow-x-auto rounded-md border border-[#30363d] bg-[#161b22] p-1 sm:w-auto" role="tablist" aria-label={t("tabs.label")}>
             <button
               type="button"
+              ref={(element) => { if (element) pipelineTabRefs.current.leads = element; else delete pipelineTabRefs.current.leads; }}
+              id="sales-pipeline-tab-leads"
               role="tab"
+              aria-controls="sales-pipeline-panel-leads"
               aria-selected={activeView === "leads"}
+              tabIndex={activeView === "leads" ? 0 : -1}
+              onKeyDown={(event) => handlePipelineTabKeyDown(event, "leads")}
               onClick={() => setPipelineView("leads")}
               className={cn(
-                "flex min-h-9 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
+                "flex min-h-11 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
                 activeView === "leads"
                   ? "bg-[#21262d] text-[#f0f6fc] border border-[#8b949e] font-semibold"
                   : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9] border border-transparent"
@@ -720,11 +742,16 @@ export default function UnifiedSalesPipelineClient({
 
             <button
               type="button"
+              ref={(element) => { if (element) pipelineTabRefs.current.quotations = element; else delete pipelineTabRefs.current.quotations; }}
+              id="sales-pipeline-tab-quotations"
               role="tab"
+              aria-controls="sales-pipeline-panel-quotations"
               aria-selected={activeView === "quotations"}
+              tabIndex={activeView === "quotations" ? 0 : -1}
+              onKeyDown={(event) => handlePipelineTabKeyDown(event, "quotations")}
               onClick={() => setPipelineView("quotations")}
               className={cn(
-                "flex min-h-9 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
+                "flex min-h-11 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
                 activeView === "quotations"
                   ? "bg-[#21262d] text-[#f0f6fc] border border-[#8b949e] font-semibold"
                   : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9] border border-transparent"
@@ -736,11 +763,16 @@ export default function UnifiedSalesPipelineClient({
 
             <button
               type="button"
+              ref={(element) => { if (element) pipelineTabRefs.current.threads = element; else delete pipelineTabRefs.current.threads; }}
+              id="sales-pipeline-tab-threads"
               role="tab"
+              aria-controls="sales-pipeline-panel-threads"
               aria-selected={activeView === "threads"}
+              tabIndex={activeView === "threads" ? 0 : -1}
+              onKeyDown={(event) => handlePipelineTabKeyDown(event, "threads")}
               onClick={() => setPipelineView("threads")}
               className={cn(
-                "flex min-h-9 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
+                "flex min-h-11 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
                 activeView === "threads"
                   ? "border border-[#8b949e] bg-[#21262d] font-semibold text-[#f0f6fc]"
                   : "border border-transparent text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9]",
@@ -752,11 +784,16 @@ export default function UnifiedSalesPipelineClient({
 
             <button
               type="button"
+              ref={(element) => { if (element) pipelineTabRefs.current.customers = element; else delete pipelineTabRefs.current.customers; }}
+              id="sales-pipeline-tab-customers"
               role="tab"
+              aria-controls="sales-pipeline-panel-customers"
               aria-selected={activeView === "customers"}
+              tabIndex={activeView === "customers" ? 0 : -1}
+              onKeyDown={(event) => handlePipelineTabKeyDown(event, "customers")}
               onClick={() => setPipelineView("customers")}
               className={cn(
-                "flex min-h-9 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
+                "flex min-h-11 flex-1 shrink-0 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-medium transition-colors sm:flex-none cursor-pointer",
                 activeView === "customers"
                   ? "border border-[#8b949e] bg-[#21262d] font-semibold text-[#f0f6fc]"
                   : "border border-transparent text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9]",
@@ -766,10 +803,12 @@ export default function UnifiedSalesPipelineClient({
               <span>{t("tabs.customers", { count: customers.length })}</span>
             </button>
           </div>
+          <p className="text-right text-[10px] text-[#8b949e] sm:hidden">{t("tabs.mobileHint")}</p>
         </div>
       </div>
 
       {/* TAB 1: INBOUND REQUESTS (LEAD MANAGEMENT COMPONENT) */}
+      <div id="sales-pipeline-panel-leads" role="tabpanel" aria-labelledby="sales-pipeline-tab-leads" tabIndex={0} hidden={activeView !== "leads"}>
       {activeView === "leads" && (
         <div className="space-y-6 animate-in fade-in-50 duration-300">
           {/* Summary Metrics */}
@@ -1179,14 +1218,18 @@ export default function UnifiedSalesPipelineClient({
           </div>
         </div>
       )}
+      </div>
 
       {/* TAB 2: QUOTATIONS CRM */}
+      <div id="sales-pipeline-panel-quotations" role="tabpanel" aria-labelledby="sales-pipeline-tab-quotations" tabIndex={0} hidden={activeView !== "quotations"}>
       {activeView === "quotations" && (
         <div className="animate-in fade-in-50 duration-300">
           <CrmClient initialRows={crmRows} hideHeader />
         </div>
       )}
+      </div>
 
+      <div id="sales-pipeline-panel-threads" role="tabpanel" aria-labelledby="sales-pipeline-tab-threads" tabIndex={0} hidden={activeView !== "threads"}>
       {activeView === "threads" && (
         <div className="space-y-6 animate-in fade-in-50 duration-300">
           <div className="flex flex-col gap-2 border-b border-[#30363d] pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -1359,8 +1402,10 @@ export default function UnifiedSalesPipelineClient({
           )}
         </div>
       )}
+      </div>
 
       {/* TAB 4: CUSTOMER DIRECTORY & ERPNEXT SYNC */}
+      <div id="sales-pipeline-panel-customers" role="tabpanel" aria-labelledby="sales-pipeline-tab-customers" tabIndex={0} hidden={activeView !== "customers"}>
       {activeView === "customers" && (
         <div className="space-y-6 animate-in fade-in-50 duration-300">
           {/* Header & Sync Button */}
@@ -1654,6 +1699,7 @@ export default function UnifiedSalesPipelineClient({
           </div>
         </div>
       )}
+      </div>
 
       {/* CREATE MANUAL REQUEST MODAL */}
       {isCreateModalOpen && (

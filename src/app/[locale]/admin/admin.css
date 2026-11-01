@@ -111,7 +111,7 @@ body.solar-ops-portal :is(input:not([type="checkbox"]):not([type="radio"]):not([
   outline: none;
   background-color: var(--solar-ops-workspace);
   color: var(--solar-ops-text);
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .solar-ops textarea,

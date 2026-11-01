@@ -69,7 +69,7 @@ export default function AdminSidebar({ currentUser, mobile = false, onNavigate }
         onClick={onNavigate}
         className={cn(
           buttonVariants({ variant: "quiet", size: "sm" }),
-          "group min-h-10 w-full justify-start gap-3 rounded-md px-3 text-[13px] font-medium focus-visible:ring-[#58a6ff] focus-visible:ring-inset",
+          "group min-h-11 w-full justify-start gap-3 rounded-md px-3 text-[13px] font-medium focus-visible:ring-[#58a6ff] focus-visible:ring-inset",
           isActive ? "bg-[#21262d] font-semibold text-[#f0f6fc]" : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9]",
         )}
       >
@@ -103,13 +103,17 @@ export default function AdminSidebar({ currentUser, mobile = false, onNavigate }
                   <button
                     type="button"
                     onClick={() => setExpandedSections((current) => ({ ...current, [section.id]: !isExpanded }))}
-                    className="flex min-h-9 w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-xs font-semibold text-[#8b949e] transition-colors hover:bg-[#21262d] hover:text-[#f0f6fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#58a6ff]"
+                    className="flex min-h-11 w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-xs font-semibold text-[#8b949e] transition-colors hover:bg-[#21262d] hover:text-[#f0f6fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#58a6ff]"
                     aria-expanded={isExpanded}
                   >
                     {t(`sections.${section.labelKey}`)}
                     <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-180")} aria-hidden="true" />
                   </button>
-                  <div className={cn("mt-1 space-y-1 overflow-hidden transition-[max-height,opacity] duration-200", isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0")}>
+                  <div
+                    inert={!isExpanded}
+                    aria-hidden={!isExpanded}
+                    className={cn("mt-1 space-y-1 overflow-hidden transition-[max-height,opacity] duration-200", isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0")}
+                  >
                     {section.items.map(renderNavItem)}
                   </div>
                 </section>
