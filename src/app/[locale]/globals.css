@@ -9022,3 +9022,16 @@ html body[data-solar-ui="customer"]
   background: #b7d1ea !important;
   color: #142533 !important;
 }
+
+/* Keep Staff authentication states readable after the shared auth cascade. */
+html body[data-solar-ui="staff"] .solar-auth-primary,
+html body[data-solar-ui="staff"] .solar-auth-primary:is(:hover, :focus-visible),
+html body[data-solar-ui="staff"] .solar-auth-mode-switch .sd-action:is(:hover, :focus-visible) {
+  color: #0f172a !important;
+}
+
+html body[data-solar-ui="staff"]
+  :is(.solar-auth-input, .solar-auth-primary, .solar-auth-secondary, .solar-auth-mode-switch .sd-action):focus-visible {
+  outline: 3px solid #0f172a !important;
+  outline-offset: 2px !important;
+}

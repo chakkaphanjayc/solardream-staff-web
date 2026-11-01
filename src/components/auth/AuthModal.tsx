@@ -106,7 +106,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     autoComplete="name"
                     placeholder={t("namePlaceholder")}
                     required
-                    className="min-h-11 w-full rounded-t-xl rounded-b-none border-b-2 border-[#8E8B83] bg-[#F7F6F3] py-3 pe-4 ps-11 font-medium text-[#2E2C27] outline-none transition-colors duration-150 placeholder:text-[#8E8B83] focus:border-[#7CA8D0] focus:bg-[#F0EEE9] motion-reduce:transition-none"
+                    className="min-h-11 w-full rounded-t-xl rounded-b-none border-b-2 border-[#8E8B83] bg-[#F7F6F3] py-3 pe-4 ps-11 font-medium text-[#2E2C27] outline-none transition-colors duration-150 placeholder:text-[#8E8B83] focus:border-[#7CA8D0] focus:bg-[#F0EEE9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] motion-reduce:transition-none"
                   />
                 </div>
               </div>
@@ -132,7 +132,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   autoComplete="email"
                   placeholder="name@example.com"
                   required
-                  className="min-h-11 w-full rounded-t-xl rounded-b-none border-b-2 border-[#8E8B83] bg-[#F7F6F3] py-3 pe-4 ps-11 font-medium text-[#2E2C27] outline-none transition-colors duration-150 placeholder:text-[#8E8B83] focus:border-[#7CA8D0] focus:bg-[#F0EEE9] motion-reduce:transition-none"
+                    className="min-h-11 w-full rounded-t-xl rounded-b-none border-b-2 border-[#8E8B83] bg-[#F7F6F3] py-3 pe-4 ps-11 font-medium text-[#2E2C27] outline-none transition-colors duration-150 placeholder:text-[#8E8B83] focus:border-[#7CA8D0] focus:bg-[#F0EEE9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] motion-reduce:transition-none"
                 />
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   autoComplete={isLogin ? "current-password" : "new-password"}
                   placeholder="••••••••"
                   required
-                  className="min-h-11 w-full rounded-t-xl rounded-b-none border-b-2 border-[#8E8B83] bg-[#F7F6F3] py-3 pe-4 ps-11 font-medium text-[#2E2C27] outline-none transition-colors duration-150 placeholder:text-[#8E8B83] focus:border-[#7CA8D0] focus:bg-[#F0EEE9] motion-reduce:transition-none"
+                    className="min-h-11 w-full rounded-t-xl rounded-b-none border-b-2 border-[#8E8B83] bg-[#F7F6F3] py-3 pe-4 ps-11 font-medium text-[#2E2C27] outline-none transition-colors duration-150 placeholder:text-[#8E8B83] focus:border-[#7CA8D0] focus:bg-[#F0EEE9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] motion-reduce:transition-none"
                 />
               </div>
             </div>
@@ -183,13 +183,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               type="submit"
               disabled={loading}
               aria-busy={loading}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#B7D1EA] px-5 py-3 text-sm font-bold text-white shadow-md transition-all duration-150 hover:bg-[#A5C2DE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none active:scale-95"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#B7D1EA] px-5 py-3 text-sm font-bold text-[#0F172A] shadow-md transition-all duration-150 hover:bg-[#A5C2DE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none active:scale-95"
             >
               {loading ? (
                 <HypotrochoidLoader
                   size={18}
-                  color="#FFFFFF"
-                  className="text-white"
+                  color="#0F172A"
+                  className="text-[#0F172A]"
                 />
               ) : null}
               {isLogin ? t("signIn") : t("signUp")}
@@ -200,7 +200,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-bold text-[#4F7FA8] transition-colors duration-150 hover:bg-[#DCE8F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA] motion-reduce:transition-none active:scale-95"
+              className="inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-bold text-[#475569] transition-colors duration-150 hover:bg-[#DCE8F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] motion-reduce:transition-none active:scale-95"
             >
               {isLogin ? t("switchToSignup") : t("switchToLogin")}
             </button>

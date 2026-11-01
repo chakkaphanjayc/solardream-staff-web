@@ -50,14 +50,14 @@ export default function AuthSplitLayout({
       className="solar-auth-shell sd-page-shell min-h-dvh w-full overflow-x-clip font-sans text-foreground lg:flex lg:flex-row"
     >
       {/* ─── LEFT COLUMN (Form) ─── */}
-      <section className="solar-auth-panel relative z-10 flex min-h-screen w-full flex-col justify-center px-4 py-8 sm:px-8 lg:w-[44%] lg:px-14">
+      <div className="solar-auth-panel relative z-10 flex min-h-screen w-full flex-col justify-center px-4 py-8 sm:px-8 lg:w-[44%] lg:px-14">
         {/* Manga Halftone Overlay */}
         <div
           aria-hidden="true"
           className="solar-auth-halftone pointer-events-none absolute inset-0 z-0"
         />
 
-        <header className="solar-auth-header absolute inset-x-0 top-0 z-20 flex min-h-20 items-center justify-between gap-3 px-4 py-4 sm:px-8 lg:px-10">
+        <header role="banner" className="solar-auth-header absolute inset-x-0 top-0 z-20 flex min-h-20 items-center justify-between gap-3 px-4 py-4 sm:px-8 lg:px-10">
           <Link
             href={`/${locale}`}
             className="solar-auth-brand inline-flex min-h-11 min-w-0 items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -144,13 +144,13 @@ export default function AuthSplitLayout({
             {t("havingTrouble")}{" "}
             <Link
               href={`/${locale}/support`}
-              className="inline-flex min-h-11 items-center rounded-lg px-1 font-bold text-[#4F7FA8] underline decoration-2 underline-offset-4 hover:text-[#2E2C27] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-11 items-center rounded-lg px-1 font-bold text-[#475569] underline decoration-2 underline-offset-4 hover:text-[#2E2C27] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {t("contactSupport")}
             </Link>
           </p>
         </main>
-      </section>
+      </div>
 
       {/* ─── RIGHT COLUMN (Image with Manga Slanted Cut) ─── */}
       <aside className="solar-auth-art relative hidden min-h-screen w-full lg:block lg:w-[56%]">
