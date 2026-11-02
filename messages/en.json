@@ -4788,6 +4788,7 @@
     "bulkNotificationQueueFailed": "{count} notification request(s) could not be queued."
   },
   "TechWorkOrder": {
+    "loadingWorkOrder": "Loading work order…",
     "customerNameUnavailable": "Customer name unavailable",
     "valueUnavailable": "Not provided",
     "panelCount": "{count, plural, =1 {# panel} other {# panels}}",

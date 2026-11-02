@@ -4788,6 +4788,7 @@
     "bulkNotificationQueueFailed": "ไม่สามารถเข้าคิวการแจ้งเตือน {count} รายการได้"
   },
   "TechWorkOrder": {
+    "loadingWorkOrder": "กำลังโหลดใบสั่งงาน…",
     "customerNameUnavailable": "ไม่พบชื่อลูกค้า",
     "valueUnavailable": "ไม่ได้ระบุ",
     "panelCount": "{count} แผง",

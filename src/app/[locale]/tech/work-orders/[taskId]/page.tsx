@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { installationTasks, installationWorkflowProjects, proposals } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import TechWorkOrderClient from "./TechWorkOrderClient";
 import type { DeliveryTask } from "@/types/delivery";
+import TechWorkOrderClient, { TechWorkOrderLoading } from "./TechWorkOrderClient";
 
 type PageProps = {
   params: Promise<{
@@ -40,7 +41,15 @@ function getPositiveNumber(value: unknown): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export default async function TechWorkOrderPage({ params }: PageProps) {
+export default function TechWorkOrderPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<TechWorkOrderLoading />}>
+      <TechWorkOrderContent params={params} />
+    </Suspense>
+  );
+}
+
+async function TechWorkOrderContent({ params }: PageProps) {
   const { taskId } = await params;
 
   const taskRow = await db.query.installationTasks.findFirst({

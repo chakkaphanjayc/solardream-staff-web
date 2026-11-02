@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import StatusBadge from "@/components/ui/StatusBadge";
+import Skeleton from "@/components/ui/skeleton";
 import { uploadQcEvidenceToDriveAction, submitTaskHandoverAction } from "@/app/actions/deliveryTasks";
 import type { DeliveryTask, DeliveryChecklistItem } from "@/types/delivery";
 import {
@@ -32,6 +33,79 @@ interface TechWorkOrderClientProps {
 }
 
 type SignaturePosition = { x: number; y: number };
+
+export function TechWorkOrderLoading() {
+  const t = useTranslations("TechWorkOrder");
+
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      className="min-h-dvh bg-[#F0EEE9] p-4 md:p-6 text-slate-950 font-sans max-w-2xl mx-auto space-y-5 pb-12"
+    >
+      <span className="sr-only">{t("loadingWorkOrder")}</span>
+      <div aria-hidden="true" className="space-y-5">
+        <section className="rounded-2xl bg-[#0F172A] p-5 shadow-md space-y-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-24 rounded-md bg-slate-700" />
+            <Skeleton className="h-5 w-20 rounded-full bg-slate-700" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-3/4 bg-slate-700" />
+            <Skeleton className="h-3 w-full max-w-sm bg-slate-700" />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Skeleton className="h-11 flex-1 bg-slate-700" />
+            <Skeleton className="h-11 w-12 bg-slate-700" />
+          </div>
+        </section>
+
+        <section className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </section>
+
+        <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+          <Skeleton className="h-3 w-36" />
+          <div className="grid grid-cols-2 gap-2">
+            <Skeleton className="h-14 rounded-xl" />
+            <Skeleton className="h-14 rounded-xl" />
+          </div>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-12" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }, (_, index) => (
+              <div key={`checklist-${index}`} className="flex min-h-11 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                <Skeleton className="h-5 w-5 shrink-0 rounded-md" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-4/5" />
+                  <Skeleton className="h-3 w-2/5" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <Skeleton className="h-4 w-36" />
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }, (_, index) => (
+              <Skeleton key={`photo-${index}`} className="h-24 rounded-xl" />
+            ))}
+          </div>
+        </section>
+
+        <Skeleton className="h-14 w-full rounded-2xl" />
+      </div>
+    </div>
+  );
+}
 
 const DEFAULT_CHECKLIST: DeliveryChecklistItem[] = [
   {
