@@ -5276,6 +5276,82 @@
       },
       "emptyTitle": "ไม่พบสายสัมพันธ์ลูกค้า",
       "emptyDescription": "ลองค้นหาใหม่หรือล้างตัวกรองที่ใช้งานอยู่"
+    },
+    "dialogs": {
+      "createManualRequestTitle": "สร้างคำขอด้วยตนเอง (ลูกค้าเป้าหมายออฟไลน์)",
+      "closeCreateManualRequest": "ปิดหน้าต่างสร้างคำขอ",
+      "leadRecordTitle": "ข้อมูลลูกค้าเป้าหมายของ {customerName}",
+      "leadRecordFallback": "ข้อมูลลูกค้าเป้าหมาย",
+      "closeLeadRecord": "ปิดหน้าต่างข้อมูลลูกค้าเป้าหมาย",
+      "customerRecordTitle": "ข้อมูลลูกค้าของ {customerName}",
+      "customerRecordFallback": "ข้อมูลลูกค้า",
+      "closeCustomerRecord": "ปิดแผงข้อมูลลูกค้า"
+    }
+  },
+  "OperationsWorkspace": {
+    "disabled": {
+      "title": "พื้นที่ทำงานฝ่ายปฏิบัติการอยู่ระหว่างเตรียมการ",
+      "description": "เปิด OPS_V2_PROJECTS ในการตั้งค่าฟีเจอร์ เมื่อทีมพร้อมแสดงข้อมูลโครงการจากโมเดลหลัก"
+    },
+    "header": {
+      "eyebrow": "ควบคุมการส่งมอบจากข้อมูลหลัก",
+      "title": "พื้นที่ทำงานฝ่ายปฏิบัติการ",
+      "description": "มุมมองโครงการเดียวสำหรับความพร้อมของสถานที่ งานวิศวกรรม ความพร้อมของวัสดุ การจัดตาราง การดำเนินงานภาคสนาม การส่งมอบ และการเปิดใช้งานการรับประกัน"
+    },
+    "overview": {
+      "label": "ภาพรวมโครงการ",
+      "visibleProjects": "โครงการที่แสดง",
+      "activeDelivery": "การส่งมอบที่กำลังดำเนินการ",
+      "needsPreparation": "ต้องเตรียมการ",
+      "completed": "เสร็จสิ้นแล้ว"
+    },
+    "filters": {
+      "searchLabel": "ค้นหาโครงการ",
+      "searchPlaceholder": "ค้นหาโครงการ ลูกค้า หรือสถานที่",
+      "stateLabel": "กรองตามสถานะโครงการ",
+      "allStates": "ทุกสถานะของโครงการ"
+    },
+    "actions": {
+      "openFeatureToggles": "เปิดการตั้งค่าฟีเจอร์",
+      "integrationMonitor": "ติดตามการเชื่อมต่อระบบ",
+      "refresh": "รีเฟรช",
+      "openProject": "เปิดโครงการ {projectCode}"
+    },
+    "table": {
+      "project": "โครงการ",
+      "customerSite": "ลูกค้า / สถานที่",
+      "lifecycle": "ขั้นตอนโครงการ",
+      "erpProjection": "สถานะ ERP",
+      "updated": "อัปเดตเมื่อ",
+      "open": "เปิด"
+    },
+    "empty": {
+      "loadingProjects": "กำลังโหลดโครงการ…",
+      "noMatches": "ไม่พบโครงการหลักที่ตรงกับตัวกรองเหล่านี้",
+      "siteDetailsPending": "รอรายละเอียดสถานที่"
+    },
+    "errors": {
+      "loadFailed": "ไม่สามารถโหลดโครงการได้"
+    },
+    "states": {
+      "new": "ใหม่",
+      "siteReview": "ตรวจสอบสถานที่",
+      "engineering": "งานวิศวกรรม",
+      "materialPreparation": "เตรียมวัสดุ",
+      "readyToSchedule": "พร้อมจัดตาราง",
+      "scheduled": "จัดตารางแล้ว",
+      "inProgress": "กำลังดำเนินการ",
+      "qaCommissioning": "ตรวจสอบคุณภาพและทดสอบระบบ",
+      "handover": "ส่งมอบ",
+      "warrantyActivation": "เปิดใช้งานการรับประกัน",
+      "completed": "เสร็จสิ้น"
+    },
+    "syncStatuses": {
+      "synced": "ซิงก์แล้ว",
+      "syncing": "กำลังซิงก์",
+      "pending": "รอดำเนินการ",
+      "failed": "ซิงก์ไม่สำเร็จ",
+      "localOnly": "มีเฉพาะข้อมูลในระบบนี้"
     }
   },
   "InboundRequests": {

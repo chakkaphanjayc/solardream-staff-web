@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Inbox,
   FileText,
@@ -1702,20 +1704,28 @@ export default function UnifiedSalesPipelineClient({
       </div>
 
       {/* CREATE MANUAL REQUEST MODAL */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+      <Dialog
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        size="md"
+        tone="dark"
+        ariaLabel={t("dialogs.createManualRequestTitle")}
+        closeLabel={t("dialogs.closeCreateManualRequest")}
+      >
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <div className="w-full max-w-lg space-y-6 rounded-xl border border-slate-800 bg-[#0F172A] p-6 shadow-2xl shadow-black/30">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Plus className="w-5 h-5 text-[#B7D1EA]" />
-                Create Manual Request (Offline Lead)
-              </h3>
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold text-white">
+                <Plus aria-hidden="true" className="w-5 h-5 text-[#B7D1EA]" />
+                {t("dialogs.createManualRequestTitle")}
+              </DialogTitle>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                aria-label={t("dialogs.closeCreateManualRequest")}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X aria-hidden="true" className="w-5 h-5" />
               </button>
             </div>
 
@@ -1817,29 +1827,39 @@ export default function UnifiedSalesPipelineClient({
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* FULL-PAGE WORKSPACE MODAL: INBOUND LEAD RECORD */}
-      {selectedRequest && (() => {
-        const parsed = parseLeadPayload(selectedRequest.payload);
-        const locDetails = extractLocationDetails(selectedRequest.payload);
-        const selectedErpnextLeadUrl = selectedRequest.erpnextSyncStatus === "SYNCED"
-          ? getErpnextLeadUrl(erpnextBaseUrl, selectedRequest.erpnextLeadId)
-          : "";
-        const currentLeadIndex = filteredRequests.findIndex((r) => r.id === selectedRequest.id);
-        const totalLeadsCount = filteredRequests.length;
-        const hasPrevLead = currentLeadIndex > 0;
-        const hasNextLead = currentLeadIndex >= 0 && currentLeadIndex < totalLeadsCount - 1;
-        const handlePrevLead = () => {
-          if (hasPrevLead) openRequestPanel(filteredRequests[currentLeadIndex - 1]);
-        };
-        const handleNextLead = () => {
-          if (hasNextLead) openRequestPanel(filteredRequests[currentLeadIndex + 1]);
-        };
+      <Dialog
+        isOpen={selectedRequest !== null}
+        onClose={() => setSelectedRequest(null)}
+        size="full"
+        tone="dark"
+        ariaLabel={selectedRequest ? t("dialogs.leadRecordTitle", { customerName: selectedRequest.customerName }) : t("dialogs.leadRecordFallback")}
+        closeLabel={t("dialogs.closeLeadRecord")}
+        className="h-dvh max-h-none w-screen max-w-none rounded-none border-0 p-0 md:max-w-none lg:max-w-none xl:max-w-none"
+      >
+        {selectedRequest && (() => {
+          const parsed = parseLeadPayload(selectedRequest.payload);
+          const locDetails = extractLocationDetails(selectedRequest.payload);
+          const selectedErpnextLeadUrl = selectedRequest.erpnextSyncStatus === "SYNCED"
+            ? getErpnextLeadUrl(erpnextBaseUrl, selectedRequest.erpnextLeadId)
+            : "";
+          const currentLeadIndex = filteredRequests.findIndex((r) => r.id === selectedRequest.id);
+          const totalLeadsCount = filteredRequests.length;
+          const hasPrevLead = currentLeadIndex > 0;
+          const hasNextLead = currentLeadIndex >= 0 && currentLeadIndex < totalLeadsCount - 1;
+          const handlePrevLead = () => {
+            if (hasPrevLead) openRequestPanel(filteredRequests[currentLeadIndex - 1]);
+          };
+          const handleNextLead = () => {
+            if (hasNextLead) openRequestPanel(filteredRequests[currentLeadIndex + 1]);
+          };
 
-        return (
-          <div className="fixed inset-0 z-50 flex flex-col bg-[#0B1121] animate-in fade-in-50 duration-200">
+          return (
+            <DialogContent className="bg-[#0B1121]">
+              <div className="flex h-full min-h-0 flex-col bg-[#0B1121] animate-in fade-in-50 duration-200">
             {/* FIXED TOP HEADER BAR */}
             <div className="flex shrink-0 flex-col gap-4 border-b border-slate-800 bg-[#0F172A] px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 z-10 shadow-md">
               <div className="flex flex-wrap items-center gap-3">
@@ -1847,9 +1867,9 @@ export default function UnifiedSalesPipelineClient({
                   <Compass className="h-3.5 w-3.5" />
                   <span>Inbound lead record</span>
                 </div>
-                <h2 className="text-xl font-bold text-white truncate max-w-md">
+                <DialogTitle className="max-w-md truncate text-xl font-bold text-white">
                   {selectedRequest.customerName}
-                </h2>
+                </DialogTitle>
                 <span className="hidden font-mono text-xs text-slate-400 sm:inline">
                   #{selectedRequest.id.slice(0, 8)} · {selectedRequest.requestType}
                 </span>
@@ -1903,10 +1923,11 @@ export default function UnifiedSalesPipelineClient({
                 <button
                   type="button"
                   onClick={() => setSelectedRequest(null)}
-                  className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+                  aria-label={t("dialogs.closeLeadRecord")}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white cursor-pointer"
                   title="Close Workspace Modal"
                 >
-                  <X className="h-6 w-6" />
+                  <X aria-hidden="true" className="h-6 w-6" />
                 </button>
               </div>
             </div>
@@ -2221,14 +2242,25 @@ export default function UnifiedSalesPipelineClient({
                 </span>
               </button>
             </div>
-          </div>
-        );
-      })()}
+              </div>
+            </DialogContent>
+          );
+        })()}
+      </Dialog>
 
       {/* FULL-PAGE WORKSPACE MODAL: CUSTOMER RECORD */}
+      <Sheet
+        isOpen={selectedCustomer !== null}
+        onClose={() => setSelectedCustomer(null)}
+        tone="dark"
+        side="right"
+        ariaLabel={selectedCustomer ? t("dialogs.customerRecordTitle", { customerName: selectedCustomer.customerName }) : t("dialogs.customerRecordFallback")}
+        closeLabel={t("dialogs.closeCustomerRecord")}
+        className="sm:max-w-2xl"
+      >
       {selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-xs">
-          <div className="flex h-full w-full max-w-2xl flex-col border-l border-slate-800 bg-[#0B1121] shadow-2xl animate-in slide-in-from-right duration-300">
+        <SheetContent>
+          <div className="flex h-full w-full flex-col border-l border-slate-800 bg-[#0B1121] shadow-2xl animate-in slide-in-from-right duration-300">
             {/* DRAWER HEADER */}
             <div className="flex shrink-0 items-center justify-between border-b border-slate-800 bg-[#0F172A] px-6 py-5 sm:px-8">
               <div className="flex items-center gap-3">
@@ -2237,9 +2269,9 @@ export default function UnifiedSalesPipelineClient({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-white tracking-tight sm:text-lg">
+                    <SheetTitle className="text-base font-bold text-white tracking-tight sm:text-lg">
                       {selectedCustomer.customerName}
-                    </h2>
+                    </SheetTitle>
                     {selectedCustomer.userId && (
                       <span className="inline-flex items-center gap-1 rounded bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 text-[10px] font-medium text-sky-400">
                         <User className="size-2.5" /> Member
@@ -2298,12 +2330,13 @@ export default function UnifiedSalesPipelineClient({
                   className="min-h-9 px-2 text-[10px]"
                 />
                 <button
-                type="button"
-                onClick={() => setSelectedCustomer(null)}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                  type="button"
+                  onClick={() => setSelectedCustomer(null)}
+                  aria-label={t("dialogs.closeCustomerRecord")}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white cursor-pointer"
+                >
+                  <X aria-hidden="true" className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
@@ -2518,8 +2551,9 @@ export default function UnifiedSalesPipelineClient({
               </button>
             </div>
           </div>
-        </div>
+        </SheetContent>
       )}
+      </Sheet>
 
       {/* SINGLE REQUEST DELETE CONFIRMATION MODAL */}
       <ConfirmDeleteModal

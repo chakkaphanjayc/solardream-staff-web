@@ -5276,6 +5276,82 @@
       },
       "emptyTitle": "No customer threads found",
       "emptyDescription": "Try a different search or clear the active filters."
+    },
+    "dialogs": {
+      "createManualRequestTitle": "Create Manual Request (Offline Lead)",
+      "closeCreateManualRequest": "Close create request dialog",
+      "leadRecordTitle": "Lead record for {customerName}",
+      "leadRecordFallback": "Lead record",
+      "closeLeadRecord": "Close lead record dialog",
+      "customerRecordTitle": "Customer record for {customerName}",
+      "customerRecordFallback": "Customer record",
+      "closeCustomerRecord": "Close customer record panel"
+    }
+  },
+  "OperationsWorkspace": {
+    "disabled": {
+      "title": "Operations workspace is staged",
+      "description": "Enable OPS_V2_PROJECTS in Feature toggles when the team is ready to expose the canonical project read model."
+    },
+    "header": {
+      "eyebrow": "Canonical delivery control",
+      "title": "Operations workspace",
+      "description": "One project view for site readiness, engineering, material availability, scheduling, field execution, handover, and warranty activation."
+    },
+    "overview": {
+      "label": "Project overview",
+      "visibleProjects": "Visible projects",
+      "activeDelivery": "Active delivery",
+      "needsPreparation": "Needs preparation",
+      "completed": "Completed"
+    },
+    "filters": {
+      "searchLabel": "Search projects",
+      "searchPlaceholder": "Search project, customer, or site",
+      "stateLabel": "Filter project state",
+      "allStates": "All lifecycle states"
+    },
+    "actions": {
+      "openFeatureToggles": "Open feature toggles",
+      "integrationMonitor": "Integration monitor",
+      "refresh": "Refresh",
+      "openProject": "Open {projectCode}"
+    },
+    "table": {
+      "project": "Project",
+      "customerSite": "Customer / site",
+      "lifecycle": "Lifecycle",
+      "erpProjection": "ERP projection",
+      "updated": "Updated",
+      "open": "Open"
+    },
+    "empty": {
+      "loadingProjects": "Loading projects…",
+      "noMatches": "No canonical projects match these filters.",
+      "siteDetailsPending": "Site details pending"
+    },
+    "errors": {
+      "loadFailed": "Projects could not be loaded."
+    },
+    "states": {
+      "new": "New",
+      "siteReview": "Site review",
+      "engineering": "Engineering",
+      "materialPreparation": "Material preparation",
+      "readyToSchedule": "Ready to schedule",
+      "scheduled": "Scheduled",
+      "inProgress": "In progress",
+      "qaCommissioning": "QA & commissioning",
+      "handover": "Handover",
+      "warrantyActivation": "Warranty activation",
+      "completed": "Completed"
+    },
+    "syncStatuses": {
+      "synced": "Synced",
+      "syncing": "Syncing",
+      "pending": "Pending",
+      "failed": "Failed",
+      "localOnly": "Local record only"
     }
   },
   "InboundRequests": {
