@@ -85,6 +85,7 @@ async function AuthorizedAdminLayout({
     <RealtimeProvider>
       <div data-bagui="operations-shell" data-admin-theme="dark" className="solar-ops flex h-screen w-full overflow-hidden bg-[#0d1117] text-[#c9d1d9]">
         <AdminThemeScope />
+        <AdminMobileNav currentUser={adminUser} />
         <div className="hidden h-full w-64 shrink-0 border-r border-[#30363d] bg-[#161b22] lg:block">
           <AdminSidebar currentUser={adminUser} />
         </div>
@@ -99,7 +100,6 @@ async function AuthorizedAdminLayout({
           </main>
         </div>
 
-        <AdminMobileNav currentUser={adminUser} />
         <AdminCommandPaletteLoader />
       </div>
     </RealtimeProvider>
