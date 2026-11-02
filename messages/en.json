@@ -5444,6 +5444,39 @@
       "localOnly": "Local record only"
     }
   },
+  "ProjectWorkspaceControls": {
+    "erpItemCode": "ERPNext item code",
+    "check": "Check",
+    "visitStart": "Visit start",
+    "visitEnd": "Visit end",
+    "confirmVisit": "Confirm field visit",
+    "materialStatus": "Material status",
+    "materialName": "Material or item name",
+    "materialQuantity": "Quantity",
+    "addMaterial": "Add",
+    "scanSerial": "Serial number to scan or verify",
+    "verify": "Verify",
+    "resolveItemCode": "ERPNext item code to match",
+    "resolve": "Resolve",
+    "assetProductName": "Product name",
+    "assetSerialNumber": "Serial number",
+    "warrantyProvider": "Warranty provider (optional)",
+    "registerAsset": "Register",
+    "assignmentVisit": "Visit",
+    "assignmentTask": "Task (optional)",
+    "assignmentTechnician": "Technician",
+    "chooseVisit": "Choose visit",
+    "visitLevelAssignment": "Visit-level assignment",
+    "chooseTechnician": "Choose technician",
+    "assignFieldWork": "Assign field work",
+    "statusLabels": {
+      "RESERVED": "RESERVED",
+      "PICKED": "PICKED",
+      "ISSUED": "ISSUED",
+      "SHORT": "SHORT",
+      "CANCELLED": "CANCELLED"
+    }
+  },
   "InboundRequests": {
     "header": {
       "salesPipeline": "Sales pipeline &",

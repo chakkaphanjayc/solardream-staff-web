@@ -5444,6 +5444,39 @@
       "localOnly": "มีเฉพาะข้อมูลในระบบนี้"
     }
   },
+  "ProjectWorkspaceControls": {
+    "erpItemCode": "รหัสสินค้า ERPNext",
+    "check": "ตรวจสอบ",
+    "visitStart": "วันและเวลาเริ่มเข้าหน้างาน",
+    "visitEnd": "วันและเวลาสิ้นสุด",
+    "confirmVisit": "ยืนยันการนัดหมาย",
+    "materialStatus": "สถานะวัสดุ",
+    "materialName": "ชื่อวัสดุหรือสินค้า",
+    "materialQuantity": "จำนวน",
+    "addMaterial": "เพิ่มรายการ",
+    "scanSerial": "หมายเลขซีเรียลสำหรับสแกนหรือยืนยัน",
+    "verify": "ตรวจสอบ",
+    "resolveItemCode": "รหัสสินค้า ERPNext สำหรับจับคู่",
+    "resolve": "จับคู่สินค้า",
+    "assetProductName": "ชื่อสินค้า",
+    "assetSerialNumber": "หมายเลขซีเรียล",
+    "warrantyProvider": "ผู้ให้บริการรับประกัน (ไม่บังคับ)",
+    "registerAsset": "ลงทะเบียน",
+    "assignmentVisit": "กำหนดการเข้าหน้างาน",
+    "assignmentTask": "งาน (ไม่บังคับ)",
+    "assignmentTechnician": "ช่างเทคนิค",
+    "chooseVisit": "เลือกการเข้าหน้างาน",
+    "visitLevelAssignment": "มอบหมายงานระดับการเข้าหน้างาน",
+    "chooseTechnician": "เลือกช่างเทคนิค",
+    "assignFieldWork": "มอบหมายงานภาคสนาม",
+    "statusLabels": {
+      "RESERVED": "สำรองแล้ว",
+      "PICKED": "หยิบแล้ว",
+      "ISSUED": "เบิกจ่ายแล้ว",
+      "SHORT": "วัสดุไม่เพียงพอ",
+      "CANCELLED": "ยกเลิกแล้ว"
+    }
+  },
   "InboundRequests": {
     "header": {
       "salesPipeline": "ไปป์ไลน์การขายและ",
