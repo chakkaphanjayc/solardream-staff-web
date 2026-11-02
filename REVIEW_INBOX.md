@@ -13,3 +13,11 @@
 - **Key Decision / Risk**:
   - The request uses a UTC envelope padded to the widest IANA offsets, then filters rows by each visit's local date; the API payload and status rules are unchanged.
   - The authenticated scheduler was not manually exercised because the restored browser session redirects to login; GitHub approval and production deployment remain blocked pending an independent reviewer and merge.
+
+### 🔔 [STAFF-UX-009] Project lifecycle and work-order data truth
+- **Why you need to see this**: Staff previously saw fabricated customer/equipment values and project or LINE/warranty completion claims after an endpoint only queued notifications.
+- **Files Changed**: `messages/en.json`, `messages/th.json`, `src/app/[locale]/admin/projects/page.tsx`, `src/app/[locale]/admin/projects/ProjectsKanbanClient.tsx`, `src/app/[locale]/tech/work-orders/[taskId]/page.tsx`, `src/app/[locale]/tech/work-orders/[taskId]/TechWorkOrderClient.tsx` (`570e975`)
+- **Verification**: Passed (`npm run typecheck`, `npm run test` 22/22, `npm run i18n:check` 4,416 keys, scoped ESLint, Next compilation); full `npm run lint` exhausted Node heap.
+- **Key Decision / Risk**:
+  - Endpoint contracts are unchanged: UI only reports queued notifications, and project milestones remain unchanged until an authoritative update.
+  - Signed-in project/work-order views remain unverified; LINE delivery, rich-menu updates, and warranty issuance are not confirmed by the queue response.
