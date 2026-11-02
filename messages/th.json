@@ -4298,7 +4298,9 @@
     "chooseDate": "เลือกวันที่",
     "chooseDateFor": "เลือกวันที่สำหรับ {customerName}",
     "targetDate": "วันที่นัดหมายใหม่",
+    "targetDateFor": "วันที่นัดหมายใหม่สำหรับ {customerName}",
     "moveVisit": "ย้ายนัดหมาย",
+    "moveVisitFor": "ย้ายนัดหมายของ {customerName}",
     "inProgressCannotMove": "ไม่สามารถเลื่อนนัดหมายที่กำลังดำเนินการได้"
   },
   "ProfileGeneralInfo": {

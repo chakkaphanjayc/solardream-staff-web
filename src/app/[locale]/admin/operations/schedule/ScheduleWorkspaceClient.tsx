@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Loader2, MapPin, Package, RefreshCw, UserRound } from "@/components/ui/icons";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { canRescheduleVisit } from "@/lib/schedulePresentation";
+import { canRescheduleVisit, clearVisitDateDraft } from "@/lib/schedulePresentation";
 import { cn } from "@/lib/utils";
 
 type ScheduleItem = {
@@ -194,6 +194,7 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
       });
       const payload = await response.json() as { success?: boolean; error?: { message?: string } };
       if (!response.ok || !payload.success) throw new Error(payload.error?.message || "The visit could not be rescheduled.");
+      setTargetDateByVisit((current) => clearVisitDateDraft(current, item.visit.id));
       await load();
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : "The visit could not be rescheduled.");
@@ -297,6 +298,7 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
                         {t("targetDate")}
                         <input
                           type="date"
+                          aria-label={t("targetDateFor", { customerName: item.project.customerName })}
                           value={targetDate}
                           min={from}
                           max={to}
@@ -304,7 +306,7 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
                           className="mt-1 min-h-11 w-full rounded-md border border-[#30363d] bg-[#161b22] px-3 text-sm text-[#f0f6fc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#79c0ff]"
                         />
                       </label>
-                      <Button type="button" size="sm" onClick={() => void reschedule(item, targetDate)} disabled={!targetDate || targetDate === scheduledDate || targetDate < from || targetDate > to || isMoving}>
+                      <Button type="button" size="sm" aria-label={t("moveVisitFor", { customerName: item.project.customerName })} onClick={() => void reschedule(item, targetDate)} disabled={!targetDate || targetDate === scheduledDate || targetDate < from || targetDate > to || isMoving}>
                         {isMoving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
                         {t("moveVisit")}
                       </Button>

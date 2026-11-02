@@ -4298,7 +4298,9 @@
     "chooseDate": "Choose a date",
     "chooseDateFor": "Choose a date for {customerName}",
     "targetDate": "New visit date",
+    "targetDateFor": "New visit date for {customerName}",
     "moveVisit": "Move visit",
+    "moveVisitFor": "Move visit for {customerName}",
     "inProgressCannotMove": "In-progress visits cannot be rescheduled."
   },
   "ProfileGeneralInfo": {
