@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Loader2, MapPin, Package, RefreshCw, UserRound } from "@/components/ui/icons";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { canRescheduleVisit } from "@/lib/schedulePresentation";
 import { cn } from "@/lib/utils";
 
 type ScheduleItem = {
@@ -96,12 +97,14 @@ function makeDayKeys(from: string, to: string) {
 
 export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled: boolean; initial: ScheduleData | null }) {
   const locale = useLocale();
+  const t = useTranslations("AdminSchedule");
   const [from, setFrom] = useState(shiftDate(-7));
   const [to, setTo] = useState(shiftDate(21));
   const [status, setStatus] = useState("");
   const [data, setData] = useState<ScheduleData>(initial || EMPTY_DATA);
   const [assignees, setAssignees] = useState<Assignee[]>([]);
   const [assignmentUserByVisit, setAssignmentUserByVisit] = useState<Record<string, string>>({});
+  const [targetDateByVisit, setTargetDateByVisit] = useState<Record<string, string>>({});
   const [draggedVisitId, setDraggedVisitId] = useState("");
   const [busyKey, setBusyKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -165,7 +168,8 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
   };
 
   const reschedule = async (item: ScheduleItem, targetDate: string) => {
-    if (["COMPLETED", "CANCELLED"].includes(item.visit.status)) return;
+    if (!canRescheduleVisit(item.visit.status) || !targetDate || targetDate < from || targetDate > to) return;
+    if (targetDate === dateKey(item.visit.scheduledStart)) return;
     const oldStart = item.visit.scheduledStart ? new Date(item.visit.scheduledStart) : null;
     const start = new Date(targetDate + "T" + (oldStart ? String(oldStart.getHours()).padStart(2, "0") + ":" + String(oldStart.getMinutes()).padStart(2, "0") : "09:00"));
     const oldEnd = item.visit.scheduledEnd ? new Date(item.visit.scheduledEnd) : null;
@@ -247,7 +251,7 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
           <label className="text-xs text-[#8b949e]">From<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="mt-1 min-h-10 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#f0f6fc]" /></label>
           <label className="text-xs text-[#8b949e]">To<input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="mt-1 min-h-10 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#f0f6fc]" /></label>
           <label className="text-xs text-[#8b949e]">Visit status<select value={status} onChange={(event) => setStatus(event.target.value)} className="mt-1 min-h-10 min-w-44 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#c9d1d9]"><option value="">All visits</option><option value="PLANNED">Planned</option><option value="CONFIRMED">Confirmed</option><option value="IN_PROGRESS">In progress</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select></label>
-          <span className="text-xs text-[#8b949e] sm:ml-auto">Drag a visit onto another day to request a server-validated reschedule.</span>
+          <span className="text-xs text-[#8b949e] sm:ml-auto">{t("dragHelp")}</span>
         </section>
 
         {error ? <div role="alert" className="flex items-start gap-2 rounded-md border border-[#f85149]/40 bg-[#f85149]/10 p-3 text-sm text-[#ff7b72]"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{error}</div> : null}
@@ -273,14 +277,41 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
             </div>
             <div className="flex min-h-[360px] min-w-[900px]">
               {dayKeys.map((day) => <div key={day} className="min-w-[210px] flex-1 space-y-3 border-r border-[#30363d] p-3 last:border-r-0" onDragOver={(event) => event.preventDefault()} onDrop={() => { const item = data.items.find((candidate) => candidate.visit.id === draggedVisitId); if (item) void reschedule(item, day); }}>
-                {(scheduledByDay.get(day) || []).map((item) => <article key={item.visit.id} draggable={!["COMPLETED", "CANCELLED"].includes(item.visit.status)} onDragStart={() => setDraggedVisitId(item.visit.id)} className={cn("cursor-grab rounded-lg border bg-[#0d1117] p-3 active:cursor-grabbing", item.visit.status === "IN_PROGRESS" ? "border-[#58a6ff]/50" : "border-[#30363d]", busyKey === "move:" + item.visit.id && "opacity-60")}>
+                {(scheduledByDay.get(day) || []).map((item) => {
+                  const canMove = canRescheduleVisit(item.visit.status);
+                  const scheduledDate = dateKey(item.visit.scheduledStart) || day;
+                  const targetDate = targetDateByVisit[item.visit.id] || scheduledDate;
+                  const isMoving = busyKey === "move:" + item.visit.id;
+
+                  return <article key={item.visit.id} draggable={canMove} onDragStart={() => setDraggedVisitId(item.visit.id)} className={cn("rounded-lg border bg-[#0d1117] p-3", canMove && "cursor-grab active:cursor-grabbing", item.visit.status === "IN_PROGRESS" ? "border-[#58a6ff]/50" : "border-[#30363d]", isMoving && "opacity-60")}>
                   <div className="flex items-start justify-between gap-2"><p className="font-mono text-xs text-[#79c0ff]">{item.project.projectCode}</p><span className={cn("rounded-full border px-2 py-1 text-[10px] font-semibold", statusTone(item.visit.status))}>{item.visit.status}</span></div>
                   <h3 className="mt-2 text-sm font-semibold text-[#f0f6fc]">{item.project.customerName}</h3>
                   <p className="mt-1 text-xs text-[#8b949e]">{item.visit.visitType} · {dateTimeLabel(item.visit.scheduledStart)}</p>
                   <p className="mt-2 flex items-start gap-1 text-xs text-[#8b949e]"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{item.project.siteLabel}</p>
                   {item.assignments.length > 0 ? <p className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-[#c9d1d9]"><UserRound className="h-3.5 w-3.5 text-[#79c0ff]" aria-hidden="true" />{item.assignments.filter((assignment) => assignment.status !== "SUPERSEDED").map((assignment) => assignment.assignee?.name || "Unassigned").join(", ")}</p> : <p className="mt-2 text-[11px] text-[#e3b341]">No technician assigned</p>}
                   {item.materials.blockers > 0 ? <p className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-[#ff7b72]"><Package className="h-3.5 w-3.5" aria-hidden="true" />{item.materials.blockers} material blocker{item.materials.blockers === 1 ? "" : "s"}</p> : <p className="mt-2 flex items-center gap-1 text-[11px] text-[#7ee787]"><CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />Materials ready</p>}
-                </article>)}
+                  {canMove ? <details className="mt-3 border-t border-[#30363d] pt-2">
+                    <summary aria-label={t("chooseDateFor", { customerName: item.project.customerName })} className="min-h-11 cursor-pointer py-2 text-xs font-semibold text-[#79c0ff] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#79c0ff]">{t("chooseDate")}</summary>
+                    <div className="mt-2 space-y-2">
+                      <label className="block text-xs text-[#8b949e]">
+                        {t("targetDate")}
+                        <input
+                          type="date"
+                          value={targetDate}
+                          min={from}
+                          max={to}
+                          onChange={(event) => setTargetDateByVisit((current) => ({ ...current, [item.visit.id]: event.target.value }))}
+                          className="mt-1 min-h-11 w-full rounded-md border border-[#30363d] bg-[#161b22] px-3 text-sm text-[#f0f6fc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#79c0ff]"
+                        />
+                      </label>
+                      <Button type="button" size="sm" onClick={() => void reschedule(item, targetDate)} disabled={!targetDate || targetDate === scheduledDate || targetDate < from || targetDate > to || isMoving}>
+                        {isMoving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+                        {t("moveVisit")}
+                      </Button>
+                    </div>
+                  </details> : item.visit.status === "IN_PROGRESS" ? <p className="mt-3 border-t border-[#30363d] pt-3 text-xs text-[#8b949e]">{t("inProgressCannotMove")}</p> : null}
+                </article>;
+                })}
                 {(scheduledByDay.get(day) || []).length === 0 ? <p className="py-12 text-center text-xs text-[#6e7681]">Drop a visit here</p> : null}
               </div>)}
             </div>

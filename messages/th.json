@@ -4293,6 +4293,14 @@
       "messages": "กล่องข้อความ"
     }
   },
+  "AdminSchedule": {
+    "dragHelp": "ลากนัดหมายไปยังวันอื่น หรือเลือกวันที่จากการ์ดนัดหมาย",
+    "chooseDate": "เลือกวันที่",
+    "chooseDateFor": "เลือกวันที่สำหรับ {customerName}",
+    "targetDate": "วันที่นัดหมายใหม่",
+    "moveVisit": "ย้ายนัดหมาย",
+    "inProgressCannotMove": "ไม่สามารถเลื่อนนัดหมายที่กำลังดำเนินการได้"
+  },
   "ProfileGeneralInfo": {
     "title": "ข้อมูลทั่วไป",
     "description": "จัดการข้อมูลบัญชี รูปโปรไฟล์ และการเชื่อมต่อ LINE เพื่อรับอัปเดตบริการจาก SolarDream",

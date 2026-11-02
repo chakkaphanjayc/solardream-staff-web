@@ -4293,6 +4293,14 @@
       "messages": "Inbox"
     }
   },
+  "AdminSchedule": {
+    "dragHelp": "Drag a visit to another day, or choose a date on its card.",
+    "chooseDate": "Choose a date",
+    "chooseDateFor": "Choose a date for {customerName}",
+    "targetDate": "New visit date",
+    "moveVisit": "Move visit",
+    "inProgressCannotMove": "In-progress visits cannot be rescheduled."
+  },
   "ProfileGeneralInfo": {
     "title": "General information",
     "description": "Manage your account details, profile picture, and LINE connection for SolarDream service updates.",
