@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Wrench,
@@ -32,11 +33,11 @@ import {
 
 export type ProjectItem = {
   id: string;
-  customerName: string;
-  phone: string;
+  customerName: string | null;
+  phone: string | null;
   email?: string | null;
   lineUserId?: string | null;
-  systemSizeKwp: number;
+  systemSizeKwp: number | null;
   milestone: ProjectMilestone;
   updatedAt: string;
 };
@@ -98,7 +99,8 @@ type Props = {
 };
 
 export default function ProjectsKanbanClient({ initialProjects, initialSelectedProjectId = null }: Props) {
-  const [milestoneOverrides, setMilestoneOverrides] = useState<Record<string, ProjectMilestone>>({});
+  const t = useTranslations("AdminProjects");
+  const locale = useLocale();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(() =>
     initialSelectedProjectId
@@ -111,23 +113,27 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
   const [updateDetails, setUpdateDetails] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const projects = initialProjects.map((project) => ({
-    ...project,
-    milestone: milestoneOverrides[project.id] ?? project.milestone,
-  }));
+  const projects = initialProjects;
+  const customerLabel = (name: string | null) => name?.trim() || t("customerNameUnavailable");
+  const systemSizeLabel = (size: number | null) => size && size > 0 ? `${size} kWp` : t("valueUnavailable");
+  const formatUpdatedAt = (value: string) => new Date(value).toLocaleDateString(locale === "th" ? "th-TH" : "en-US");
 
   const handleMilestoneAdvance = (project: ProjectItem, nextMilestone: ProjectMilestone) => {
+    const isComplete = nextMilestone === "COMPLETED";
+    if (isComplete && !project.customerName?.trim()) {
+      toast.error(t("customerNameRequiredForCompletion"));
+      return;
+    }
     startTransition(async () => {
       try {
-        const isComplete = nextMilestone === "COMPLETED";
         const endpoint = isComplete ? "/api/lifecycle/complete-project" : "/api/lifecycle/project-update";
 
         const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            customerName: project.customerName,
-            phone: project.phone,
+            customerName: project.customerName ?? "",
+            phone: project.phone ?? "",
             email: project.email,
             lineUserId: project.lineUserId,
             projectId: project.id,
@@ -136,31 +142,34 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
           }),
         });
 
-        const data = await response.json();
+        const data = await response.json() as {
+          success?: boolean;
+          error?: string;
+          queued?: boolean;
+          pendingRichMenuSwap?: boolean;
+        };
 
-        if (data.success) {
-          toast.success(
-            isComplete
-              ? "Project 100% Completed! LINE Rich Menu Swapped to After-Sales & Warranty Issued."
-              : `Milestone updated to ${nextMilestone}. Real-time LINE alert dispatched.`
-          );
-
-          setMilestoneOverrides((current) => ({ ...current, [project.id]: nextMilestone }));
+        if (response.ok && data.success === true && data.queued === true) {
+          toast.success(isComplete
+            ? data.pendingRichMenuSwap
+              ? t("completionNotificationQueuedMenuPending")
+              : t("completionNotificationQueued")
+            : t("milestoneNotificationQueued"));
           setSelectedProject(null);
           setUpdateDetails("");
         } else {
-          toast.error(data.error || "Failed to update project milestone.");
+          toast.error(data.error || t("notificationQueueFailed"));
         }
       } catch {
-        toast.error("Error connecting to project transition endpoint.");
+        toast.error(t("notificationQueueConnectionFailed"));
       }
     });
   };
 
   const filteredProjects = projects.filter(
     (p) =>
-      p.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.phone.includes(searchQuery)
+      (p.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.phone || "").includes(searchQuery)
   );
   const projectSelection = useAdminSelection(filteredProjects.map((project) => project.id));
 
@@ -171,11 +180,15 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
       .filter((item): item is { project: ProjectItem; nextMilestone: ProjectMilestone } => Boolean(item.nextMilestone));
 
     if (actionable.length === 0) {
-      toast.error("Select projects that have a next milestone.");
+      toast.error(t("noProjectsToQueue"));
       return;
     }
     if (actionable.length !== selected.length) {
-      toast.error("Completed projects cannot be advanced again.");
+      toast.error(t("completedProjectsNoNextMilestone"));
+      return;
+    }
+    if (actionable.some(({ project, nextMilestone }) => nextMilestone === "COMPLETED" && !project.customerName?.trim())) {
+      toast.error(t("customerNameRequiredForCompletion"));
       return;
     }
 
@@ -190,8 +203,8 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  customerName: project.customerName,
-                  phone: project.phone,
+                  customerName: project.customerName ?? "",
+                  phone: project.phone ?? "",
                   email: project.email,
                   lineUserId: project.lineUserId,
                   projectId: project.id,
@@ -200,8 +213,8 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
                 }),
               },
             );
-            const data = (await response.json()) as { success?: boolean; error?: string };
-            return { project, nextMilestone, success: response.ok && data.success === true, error: data.error };
+            const data = (await response.json()) as { success?: boolean; error?: string; queued?: boolean };
+            return { project, nextMilestone, success: response.ok && data.success === true && data.queued === true, error: data.error };
           }),
         );
         const completed = settled.flatMap((item) =>
@@ -209,19 +222,18 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
         );
         const failed = settled.length - completed.length;
         if (completed.length > 0) {
-          setMilestoneOverrides((current) => Object.fromEntries([
-            ...Object.entries(current),
-            ...completed.map((result) => [result.project.id, result.nextMilestone] as const),
-          ]));
           projectSelection.remove(completed.map((result) => result.project.id));
-          toast.success(`Advanced ${completed.length} project${completed.length === 1 ? "" : "s"}.`);
+          const hasCompletion = completed.some((result) => result.nextMilestone === "COMPLETED");
+          toast.success(hasCompletion
+            ? t("bulkCompletionNotificationQueued", { count: completed.length })
+            : t("bulkMilestoneNotificationQueued", { count: completed.length }));
         }
         if (failed > 0) {
-          toast.error(`${failed} project${failed === 1 ? "" : "s"} could not be advanced.`);
+          toast.error(t("bulkNotificationQueueFailed", { count: failed }));
         }
       } catch (error) {
         console.error("Bulk project milestone update error:", error);
-        toast.error("Could not advance the selected projects. Please try again.");
+        toast.error(t("bulkQueueRequestFailed"));
       }
     });
   };
@@ -257,7 +269,7 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
         onClear={projectSelection.clear}
         isPending={isPending}
         actions={[
-          { id: "advance", label: "Advance selected", icon: ArrowRight, tone: "success", onClick: handleBulkAdvance },
+          { id: "advance", label: t("queueUpdates"), icon: ArrowRight, tone: "success", onClick: handleBulkAdvance },
         ]}
       />
 
@@ -299,26 +311,26 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
                   <AdminSelectionCheckbox
                     checked={projectSelection.isSelected(project.id)}
                     onChange={() => projectSelection.toggle(project.id)}
-                    label={`Select project for ${project.customerName}`}
+                    label={`Select project for ${customerLabel(project.customerName)}`}
                   />
                   <button
                     type="button"
                     onClick={() => setSelectedProject(project)}
                     className="min-w-0 flex-1 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA]"
-                    aria-label={`Open project details for ${project.customerName}`}
+                    aria-label={`Open project details for ${customerLabel(project.customerName)}`}
                   >
                     <span className="flex items-start justify-between gap-2">
                       <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-white">
                         <User className="size-4 shrink-0 text-[#B7D1EA]" aria-hidden="true" />
-                        <span className="truncate">{project.customerName}</span>
+                        <span className="truncate">{customerLabel(project.customerName)}</span>
                       </span>
                       <span className="shrink-0 rounded-md bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-300 ring-1 ring-inset ring-emerald-500/25">
-                        {project.systemSizeKwp} kWp
+                        {systemSizeLabel(project.systemSizeKwp)}
                       </span>
                     </span>
                     <span className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
-                      <span className="inline-flex items-center gap-1"><Phone className="size-3.5 text-slate-500" aria-hidden="true" />{project.phone}</span>
-                      <span>Updated {new Date(project.updatedAt).toLocaleDateString("th-TH")}</span>
+                      {project.phone ? <span className="inline-flex items-center gap-1"><Phone className="size-3.5 text-slate-500" aria-hidden="true" />{project.phone}</span> : <span>{t("phoneUnavailable")}</span>}
+                      <span>Updated {formatUpdatedAt(project.updatedAt)}</span>
                     </span>
                     <span className="mt-2 block text-xs font-semibold text-[#B7D1EA]">Open project details</span>
                   </button>
@@ -363,26 +375,26 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
                           <AdminSelectionCheckbox
                             checked={projectSelection.isSelected(proj.id)}
                             onChange={() => projectSelection.toggle(proj.id)}
-                            label={`Select project for ${proj.customerName}`}
+                            label={`Select project for ${customerLabel(proj.customerName)}`}
                           />
                           <button
                             type="button"
                             onClick={() => setSelectedProject(proj)}
                             className="min-w-0 flex-1 space-y-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B7D1EA]"
-                            aria-label={`Open project details for ${proj.customerName}`}
+                            aria-label={`Open project details for ${customerLabel(proj.customerName)}`}
                           >
                             <span className="flex items-start justify-between gap-2">
                               <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-bold text-white">
                                 <User className="size-3.5 shrink-0 text-[#B7D1EA]" aria-hidden="true" />
-                                {proj.customerName}
+                                {customerLabel(proj.customerName)}
                               </span>
                               <span className="shrink-0 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300 ring-1 ring-inset ring-emerald-500/25">
-                                {proj.systemSizeKwp} kWp
+                                {systemSizeLabel(proj.systemSizeKwp)}
                               </span>
                             </span>
                             <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] text-slate-400">
-                              <span className="inline-flex items-center gap-1"><Phone className="size-3 text-slate-500" aria-hidden="true" />{proj.phone}</span>
-                              <span className="text-[10px] text-slate-500">{new Date(proj.updatedAt).toLocaleDateString("th-TH")}</span>
+                              {proj.phone ? <span className="inline-flex items-center gap-1"><Phone className="size-3 text-slate-500" aria-hidden="true" />{proj.phone}</span> : <span>{t("phoneUnavailable")}</span>}
+                              <span className="text-[10px] text-slate-500">{formatUpdatedAt(proj.updatedAt)}</span>
                             </span>
                             <span className="block text-[11px] font-semibold text-[#B7D1EA]">Open project details</span>
                           </button>
@@ -403,27 +415,27 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
         onClose={() => setSelectedProject(null)}
         size="md"
         tone="dark"
-        ariaLabel="Update installation stage"
-        closeLabel="Close project stage dialog"
+        ariaLabel={t("queueMilestoneTitle")}
+        closeLabel={t("closeQueueDialog")}
         className="max-h-[90dvh] overflow-hidden border-slate-800 bg-[#0F172A] p-0"
       >
         {selectedProject ? (
           <DialogContent>
-            <DialogHeader className="border-b border-slate-800" closeLabel="Close project stage dialog">
+            <DialogHeader className="border-b border-slate-800" closeLabel={t("closeQueueDialog")}>
               <div>
                 <span className="font-mono text-[10px] uppercase text-[#B7D1EA] bg-[#B7D1EA]/10 border border-[#B7D1EA]/20 px-2 py-0.5 rounded">
                   Project #{selectedProject.id.slice(0, 8)}
                 </span>
-                <DialogTitle className="mt-1 text-lg">Update Installation Stage</DialogTitle>
+                <DialogTitle className="mt-1 text-lg">{t("queueMilestoneTitle")}</DialogTitle>
                 <DialogDescription className="mt-1 text-xs text-slate-400">
-                  Advance milestone for <strong>{selectedProject.customerName}</strong> ({selectedProject.systemSizeKwp} kWp)
+                  {t("queueMilestoneDescription", { customer: customerLabel(selectedProject.customerName), systemSize: systemSizeLabel(selectedProject.systemSizeKwp) })}
                 </DialogDescription>
               </div>
             </DialogHeader>
             <DialogBody className="space-y-6">
               <div className="space-y-2">
                 <p id="project-next-milestone-label" className="text-xs font-mono text-slate-400 uppercase tracking-wider">
-                  Select Next Milestone:
+                  {t("milestoneToNotify")}
                 </p>
                 <div className="space-y-2" role="group" aria-labelledby="project-next-milestone-label">
                   {MILESTONES.map((m) => (
@@ -446,7 +458,7 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
                       {m.key === "COMPLETED" && (
                         <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded flex items-center gap-1">
                           <Sparkles className="w-3 h-3" />
-                          LINE Rich Menu Swap
+                          {t("richMenuPending")}
                         </span>
                       )}
                     </button>
@@ -456,8 +468,9 @@ export default function ProjectsKanbanClient({ initialProjects, initialSelectedP
 
               <div className="space-y-2">
                 <label htmlFor="project-update-notes" className="text-xs font-mono text-slate-400 uppercase tracking-wider block">
-                  Customer Update Notes (Sent via LINE Push):
+                  {t("notificationDetails")}
                 </label>
+                <p className="text-xs leading-5 text-slate-500">{t("projectStatusUnchangedNote")}</p>
                 <textarea
                   id="project-update-notes"
                   rows={3}

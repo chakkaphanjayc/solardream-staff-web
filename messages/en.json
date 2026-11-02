@@ -4762,6 +4762,35 @@
     "cancel": "Cancel",
     "close": "Close revision request"
   },
+  "AdminProjects": {
+    "customerNameUnavailable": "Customer name unavailable",
+    "phoneUnavailable": "Phone not provided",
+    "valueUnavailable": "Not provided",
+    "queueUpdates": "Queue updates",
+    "queueMilestoneTitle": "Queue project update",
+    "closeQueueDialog": "Close project update dialog",
+    "queueMilestoneDescription": "Queue a customer update for {customer} ({systemSize}). This will not change the project status.",
+    "milestoneToNotify": "Milestone to include in the notification:",
+    "richMenuPending": "LINE menu update pending",
+    "notificationDetails": "Customer notification details (queued for delivery):",
+    "projectStatusUnchangedNote": "This request queues a notification. Project status changes only after an authoritative update.",
+    "customerNameRequiredForCompletion": "A customer name is required to queue a completion notification.",
+    "noProjectsToQueue": "Select projects with a next milestone to include in a notification.",
+    "completedProjectsNoNextMilestone": "Completed projects do not have a later milestone to queue.",
+    "bulkQueueRequestFailed": "Could not queue the selected notification requests. Please try again.",
+    "milestoneNotificationQueued": "Milestone notification queued. Project status remains unchanged until an authoritative update is available.",
+    "completionNotificationQueued": "Completion notification queued. Project status, LINE delivery, and warranty issuance are not confirmed.",
+    "completionNotificationQueuedMenuPending": "Completion notification queued. The LINE rich menu update is pending; delivery and warranty issuance are not confirmed.",
+    "bulkMilestoneNotificationQueued": "Notifications queued for {count} projects. Project statuses remain unchanged until updated.",
+    "bulkCompletionNotificationQueued": "Completion notifications queued for {count} projects. LINE delivery and warranty issuance are not confirmed; rich menu updates remain pending.",
+    "notificationQueueFailed": "The notification could not be queued.",
+    "notificationQueueConnectionFailed": "Could not connect to the notification service.",
+    "bulkNotificationQueueFailed": "{count} notification request(s) could not be queued."
+  },
+  "TechWorkOrder": {
+    "customerNameUnavailable": "Customer name unavailable",
+    "valueUnavailable": "Not provided"
+  },
   "InstallerWorkflow": {
     "noActiveStage": "No active stage found.",
     "photoUploaded": "Photo uploaded.",

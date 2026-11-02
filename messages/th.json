@@ -4762,6 +4762,35 @@
     "cancel": "ยกเลิก",
     "close": "ปิดหน้าต่างขอแก้ไข"
   },
+  "AdminProjects": {
+    "customerNameUnavailable": "ไม่พบชื่อลูกค้า",
+    "phoneUnavailable": "ไม่ได้ระบุหมายเลขโทรศัพท์",
+    "valueUnavailable": "ไม่ได้ระบุ",
+    "queueUpdates": "เข้าคิวการแจ้งเตือน",
+    "queueMilestoneTitle": "เข้าคิวการแจ้งเตือนโครงการ",
+    "closeQueueDialog": "ปิดหน้าต่างแจ้งเตือนโครงการ",
+    "queueMilestoneDescription": "เข้าคิวการแจ้งเตือนลูกค้าเกี่ยวกับ {customer} ({systemSize}) โดยคำขอนี้ไม่เปลี่ยนสถานะโครงการ",
+    "milestoneToNotify": "ขั้นตอนโครงการที่จะแจ้งให้ลูกค้าทราบ:",
+    "richMenuPending": "เมนู LINE กำลังรออัปเดต",
+    "notificationDetails": "รายละเอียดการแจ้งเตือนลูกค้า (เข้าคิวรอส่ง):",
+    "projectStatusUnchangedNote": "คำขอนี้เข้าคิวการแจ้งเตือน สถานะโครงการจะเปลี่ยนเมื่อได้รับการยืนยันจากระบบหลัก",
+    "customerNameRequiredForCompletion": "ต้องมีชื่อลูกค้าก่อนส่งคำขอแจ้งการเสร็จสิ้นโครงการ",
+    "noProjectsToQueue": "เลือกโครงการที่มีขั้นตอนถัดไปเพื่อใส่ในข้อความแจ้งเตือน",
+    "completedProjectsNoNextMilestone": "โครงการที่เสร็จสิ้นแล้วไม่มีขั้นตอนถัดไปให้เข้าคิวแจ้งเตือน",
+    "bulkQueueRequestFailed": "ไม่สามารถเข้าคิวคำขอแจ้งเตือนที่เลือกได้ กรุณาลองอีกครั้ง",
+    "milestoneNotificationQueued": "เข้าคิวการแจ้งเตือนความคืบหน้าแล้ว สถานะโครงการยังไม่เปลี่ยนจนกว่าจะมีข้อมูลยืนยันจากระบบ",
+    "completionNotificationQueued": "เข้าคิวการแจ้งเตือนโครงการเสร็จสิ้นแล้ว แต่ยังไม่ยืนยันสถานะโครงการ การส่ง LINE หรือการออกใบรับประกัน",
+    "completionNotificationQueuedMenuPending": "เข้าคิวการแจ้งเตือนโครงการเสร็จสิ้นแล้ว เมนู LINE กำลังรออัปเดต โดยยังไม่ยืนยันการส่งข้อความหรือการออกใบรับประกัน",
+    "bulkMilestoneNotificationQueued": "เข้าคิวการแจ้งเตือน {count} โครงการแล้ว สถานะโครงการยังไม่เปลี่ยนจนกว่าจะได้รับการยืนยัน",
+    "bulkCompletionNotificationQueued": "เข้าคิวการแจ้งเตือนโครงการเสร็จสิ้น {count} รายการแล้ว ยังไม่ยืนยันการส่ง LINE หรือการออกใบรับประกัน และเมนู LINE กำลังรออัปเดต",
+    "notificationQueueFailed": "ไม่สามารถเข้าคิวการแจ้งเตือนได้",
+    "notificationQueueConnectionFailed": "ไม่สามารถเชื่อมต่อบริการแจ้งเตือนได้",
+    "bulkNotificationQueueFailed": "ไม่สามารถเข้าคิวการแจ้งเตือน {count} รายการได้"
+  },
+  "TechWorkOrder": {
+    "customerNameUnavailable": "ไม่พบชื่อลูกค้า",
+    "valueUnavailable": "ไม่ได้ระบุ"
+  },
   "InstallerWorkflow": {
     "noActiveStage": "ไม่พบขั้นตอนที่กำลังดำเนินการ",
     "photoUploaded": "อัปโหลดรูปภาพแล้ว",

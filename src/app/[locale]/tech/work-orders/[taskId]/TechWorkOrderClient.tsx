@@ -5,22 +5,18 @@ import SignatureCanvas from "react-signature-canvas";
 import {
   Camera,
   CheckCircle2,
-  ChevronRight,
-  Clock,
   ExternalLink,
   FileCheck,
-  HardHat,
-  MapPin,
   Navigation,
   Phone,
   RotateCcw,
   ShieldCheck,
   Upload,
-  User,
   Wrench,
   X,
 } from "@/components/ui/icons";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { uploadQcEvidenceToDriveAction, submitTaskHandoverAction } from "@/app/actions/deliveryTasks";
 import type { DeliveryTask, DeliveryChecklistItem } from "@/types/delivery";
@@ -32,7 +28,6 @@ import {
 } from "@/components/ui/dialog";
 
 interface TechWorkOrderClientProps {
-  locale: string;
   initialTask: DeliveryTask;
 }
 
@@ -95,9 +90,9 @@ const DEFAULT_CHECKLIST: DeliveryChecklistItem[] = [
 ];
 
 export default function TechWorkOrderClient({
-  locale,
   initialTask,
 }: TechWorkOrderClientProps) {
+  const t = useTranslations("TechWorkOrder");
   const [task, setTask] = useState<DeliveryTask>(initialTask);
   const [checklist, setChecklist] = useState<DeliveryChecklistItem[]>(DEFAULT_CHECKLIST);
   const [uploadedPhotos, setUploadedPhotos] = useState<Record<string, string>>({});
@@ -108,6 +103,15 @@ export default function TechWorkOrderClient({
   const sigCanvasRef = useRef<SignatureCanvas | null>(null);
   const [isSubmittingHandover, setIsSubmittingHandover] = useState(false);
   const [completedPdfUrl, setCompletedPdfUrl] = useState<string | null>(null);
+  const customerName = task.customerName.trim() || t("customerNameUnavailable");
+  const installationAddress = task.installationAddress?.trim() || null;
+  const customerPhone = task.customerPhone?.trim() || null;
+  const systemSize = task.systemSizeKwp && task.systemSizeKwp > 0 ? task.systemSizeKwp : null;
+  const systemSizeLabel = systemSize === null ? t("valueUnavailable") : `${systemSize} kWp`;
+  const panelCountLabel = task.panelCount && task.panelCount > 0
+    ? `${task.panelCount} panels`
+    : t("valueUnavailable");
+  const inverterModel = task.inverterModel?.trim() || t("valueUnavailable");
 
   const toggleCheckitem = (itemId: string) => {
     setChecklist((prev) =>
@@ -166,9 +170,9 @@ export default function TechWorkOrderClient({
   };
 
   const allRequiredCompleted = checklist.filter((c) => c.required).every((c) => c.completed);
-  const mapsNavigationUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-    task.installationAddress || "Bangkok"
-  )}`;
+  const mapsNavigationUrl = installationAddress
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(installationAddress)}`
+    : null;
 
   return (
     <div className="min-h-dvh bg-[#F0EEE9] p-4 md:p-6 text-slate-950 font-sans max-w-2xl mx-auto space-y-5 pb-12">
@@ -186,13 +190,13 @@ export default function TechWorkOrderClient({
         <div>
           <h1 className="text-lg font-black tracking-tight">{task.title}</h1>
           <p className="mt-1 text-xs font-semibold text-slate-300">
-            ผู้รับบริการ: {task.customerName} ({task.systemSizeKwp} kWp Solar System)
+            ผู้รับบริการ: {customerName} ({systemSize === null ? t("valueUnavailable") : `${systemSizeLabel} Solar System`})
           </p>
         </div>
 
         {/* 1-Tap Google Maps Navigation & Phone Buttons */}
-        <div className="pt-2 flex items-center gap-2">
-          <a
+        {(mapsNavigationUrl || customerPhone) ? <div className="pt-2 flex items-center gap-2">
+          {mapsNavigationUrl ? <a
             href={mapsNavigationUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -200,24 +204,24 @@ export default function TechWorkOrderClient({
           >
             <Navigation className="h-4 w-4" />
             <span>นำทางด้วย Google Maps</span>
-          </a>
+          </a> : null}
 
-          {task.customerPhone && (
+          {customerPhone && (
             <a
-              href={`tel:${task.customerPhone}`}
+              href={`tel:${customerPhone}`}
               className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white p-2.5 text-xs font-bold transition"
             >
               <Phone className="h-4 w-4 text-[#B7D1EA]" />
               <span>โทรหาลูกค้า</span>
             </a>
           )}
-        </div>
+        </div> : null}
       </div>
 
       {/* Customer & Location Card */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs space-y-2 text-xs">
         <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">สถานที่ติดตั้ง / Site Address</p>
-        <p className="font-black text-slate-900 leading-relaxed">{task.installationAddress}</p>
+        <p className="font-black text-slate-900 leading-relaxed">{installationAddress || t("valueUnavailable")}</p>
       </div>
 
       {/* Project Scope Card */}
@@ -226,11 +230,11 @@ export default function TechWorkOrderClient({
         <div className="grid grid-cols-2 gap-2 pt-1 font-bold text-slate-800">
           <div className="p-2 bg-slate-50 rounded-xl border border-slate-100">
             <span className="text-[10px] text-slate-400 block font-normal">แผงโซลาร์</span>
-            <span>{task.panelCount} แผง (Tier-1 Mono)</span>
+            <span>{panelCountLabel}</span>
           </div>
           <div className="p-2 bg-slate-50 rounded-xl border border-slate-100">
             <span className="text-[10px] text-slate-400 block font-normal">อินเวอร์เตอร์</span>
-            <span>{task.inverterModel}</span>
+            <span>{inverterModel}</span>
           </div>
         </div>
       </div>
@@ -371,9 +375,11 @@ export default function TechWorkOrderClient({
 
           <DialogBody className="p-6 space-y-4 text-xs">
             <div className="space-y-1">
-              <p className="font-black text-slate-900">เรียนคุณ {task.customerName}</p>
+              <p className="font-black text-slate-900">เรียนคุณ {customerName}</p>
               <p className="text-slate-600 font-medium leading-relaxed">
-                กรุณาลงนามอิเล็กทรอนิกส์ในช่องด้านล่างเพื่อยืนยันว่าการติดตั้งระบบโซลาร์เซลล์ขนาด {task.systemSizeKwp} kWp เสร็จสมบูรณ์และผ่านการทดสอบความปลอดภัยแล้ว
+                {task.systemSizeKwp && task.systemSizeKwp > 0
+                  ? `กรุณาลงนามอิเล็กทรอนิกส์ในช่องด้านล่างเพื่อยืนยันว่าการติดตั้งระบบโซลาร์เซลล์ขนาด ${task.systemSizeKwp} kWp เสร็จสมบูรณ์และผ่านการทดสอบความปลอดภัยแล้ว`
+                  : "กรุณาลงนามอิเล็กทรอนิกส์ในช่องด้านล่างเพื่อยืนยันว่าการติดตั้งระบบโซลาร์เซลล์เสร็จสมบูรณ์และผ่านการทดสอบความปลอดภัยแล้ว"}
               </p>
             </div>
 
