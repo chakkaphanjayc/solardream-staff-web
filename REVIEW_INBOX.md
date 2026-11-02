@@ -5,3 +5,11 @@
 - **Key Decision / Risk**:
   - `requireStaff()` and its server redirect remain unchanged; the fallback contains only a generic loading skeleton.
   - Authenticated admin pages need a staff account; PR #1 is open, and GitHub prevents author self-approval.
+
+### 🔔 [STAFF-UX-004] Schedule timezone and calendar-date consistency
+- **Why you need to see this**: Rescheduling now resolves the selected calendar date in each visit's stored timezone, which determines the persisted appointment instants.
+- **Files Changed**: `src/app/[locale]/admin/operations/schedule/ScheduleWorkspaceClient.tsx`, `src/lib/schedulePresentation.ts`, `src/lib/schedulePresentation.test.ts`, `messages/en.json`, `messages/th.json` (`f590b35`)
+- **Verification**: Passed (`npm run typecheck`, `npm run test` 22/22, `npm run i18n:check`, scoped ESLint, `git diff --check`, Next compilation); repository-wide `npm run lint` ran out of heap at 4 GB, 6 GB, and 8 GB.
+- **Key Decision / Risk**:
+  - The request uses a UTC envelope padded to the widest IANA offsets, then filters rows by each visit's local date; the API payload and status rules are unchanged.
+  - The authenticated scheduler was not manually exercised because the restored browser session redirects to login; GitHub approval and production deployment remain blocked pending an independent reviewer and merge.
