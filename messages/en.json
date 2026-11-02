@@ -4295,13 +4295,19 @@
   },
   "AdminSchedule": {
     "dragHelp": "Drag a visit to another day, or choose a date on its card.",
+    "dateRangeHelp": "Choose up to 31 calendar days; each visit follows its local timezone.",
+    "scheduledVisits": "Scheduled visits",
     "chooseDate": "Choose a date",
-    "chooseDateFor": "Choose a date for {customerName}",
+    "chooseDateFor": "Choose a date for {customerName}, project {projectCode}, currently scheduled {scheduledAt}",
     "targetDate": "New visit date",
-    "targetDateFor": "New visit date for {customerName}",
+    "targetDateFor": "New visit date for {customerName}, project {projectCode}, currently scheduled {scheduledAt}",
     "moveVisit": "Move visit",
-    "moveVisitFor": "Move visit for {customerName}",
-    "inProgressCannotMove": "In-progress visits cannot be rescheduled."
+    "moveVisitFor": "Move visit for {customerName}, project {projectCode}, currently scheduled {scheduledAt}",
+    "inProgressCannotMove": "In-progress visits cannot be rescheduled.",
+    "invalidVisitDate": "That date and visit time does not exist in this visit's time zone. Choose another date.",
+    "visitMoved": "{customerName}'s visit for project {projectCode}, scheduled {scheduledAt}, was moved to {date}.",
+    "invalidDateRange": "Choose a valid date range of up to 31 calendar days.",
+    "refreshingSchedule": "Refreshing schedule"
   },
   "ProfileGeneralInfo": {
     "title": "General information",

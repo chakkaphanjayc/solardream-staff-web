@@ -4295,13 +4295,19 @@
   },
   "AdminSchedule": {
     "dragHelp": "ลากนัดหมายไปยังวันอื่น หรือเลือกวันที่จากการ์ดนัดหมาย",
+    "dateRangeHelp": "เลือกช่วงเวลาได้สูงสุด 31 วัน โดยวันที่ในปฏิทินอิงตามเขตเวลาของแต่ละนัดหมาย",
+    "scheduledVisits": "นัดหมายที่กำหนดแล้ว",
     "chooseDate": "เลือกวันที่",
-    "chooseDateFor": "เลือกวันที่สำหรับ {customerName}",
+    "chooseDateFor": "เลือกวันที่สำหรับ {customerName} โครงการ {projectCode} ซึ่งนัดหมายไว้ {scheduledAt}",
     "targetDate": "วันที่นัดหมายใหม่",
-    "targetDateFor": "วันที่นัดหมายใหม่สำหรับ {customerName}",
+    "targetDateFor": "วันที่นัดหมายใหม่สำหรับ {customerName} โครงการ {projectCode} ซึ่งนัดหมายไว้ {scheduledAt}",
     "moveVisit": "ย้ายนัดหมาย",
-    "moveVisitFor": "ย้ายนัดหมายของ {customerName}",
-    "inProgressCannotMove": "ไม่สามารถเลื่อนนัดหมายที่กำลังดำเนินการได้"
+    "moveVisitFor": "ย้ายนัดหมายของ {customerName} โครงการ {projectCode} ซึ่งนัดหมายไว้ {scheduledAt}",
+    "inProgressCannotMove": "ไม่สามารถเลื่อนนัดหมายที่กำลังดำเนินการได้",
+    "invalidVisitDate": "วันที่และเวลานัดหมายนี้ไม่มีอยู่ในเขตเวลาของนัดหมาย โปรดเลือกวันอื่น",
+    "visitMoved": "ย้ายนัดหมายของ {customerName} โครงการ {projectCode} ที่นัดไว้ {scheduledAt} ไปเป็นวันที่ {date} แล้ว",
+    "invalidDateRange": "โปรดเลือกช่วงวันที่ไม่เกิน 31 วันและเป็นช่วงเวลาที่ถูกต้อง",
+    "refreshingSchedule": "กำลังอัปเดตตารางนัดหมาย"
   },
   "ProfileGeneralInfo": {
     "title": "ข้อมูลทั่วไป",

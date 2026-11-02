@@ -1,12 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Loader2, MapPin, Package, RefreshCw, UserRound } from "@/components/ui/icons";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { canRescheduleVisit, clearVisitDateDraft } from "@/lib/schedulePresentation";
+import {
+  canRescheduleVisit,
+  clearVisitDateDraft,
+  dateKeyInTimeZone,
+  dateTimeInTimeZone,
+  isVisitWithinDateRange,
+  MAX_SCHEDULE_DAY_SPAN,
+  reconcileVisitDateDrafts,
+  scheduleQueryBounds,
+  wallClockInTimeZone,
+  type VisitDateDraft,
+} from "@/lib/schedulePresentation";
 import { cn } from "@/lib/utils";
 
 type ScheduleItem = {
@@ -54,25 +65,34 @@ const EMPTY_DATA: ScheduleData = {
 
 function shiftDate(days: number) {
   const date = new Date();
-  date.setHours(12, 0, 0, 0);
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function dateKey(value: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+function shiftCalendarDate(value: string, days: number) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  date.setUTCDate(date.getUTCDate() + days);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
 }
 
-function dateLabel(value: string) {
-  return new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short" }).format(new Date(value + "T12:00:00"));
+function dateLabel(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(new Date(value + "T12:00:00Z"));
 }
 
-function dateTimeLabel(value: string | null) {
+function dateTimeLabel(value: string | null, locale: string, timeZone: string) {
   if (!value) return "Not scheduled";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Not scheduled" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  if (Number.isNaN(date.getTime())) return "Not scheduled";
+  try {
+    return new Intl.DateTimeFormat(locale, { timeZone, dateStyle: "medium", timeStyle: "short" }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  }
 }
 
 function statusTone(status: string) {
@@ -83,14 +103,14 @@ function statusTone(status: string) {
 }
 
 function makeDayKeys(from: string, to: string) {
-  const start = new Date(from + "T12:00:00");
-  const end = new Date(to + "T12:00:00");
+  const start = new Date(from + "T12:00:00Z");
+  const end = new Date(to + "T12:00:00Z");
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
   const days: string[] = [];
   const cursor = new Date(start);
-  while (cursor <= end && days.length < 31) {
+  while (cursor <= end && days.length <= MAX_SCHEDULE_DAY_SPAN) {
     days.push(cursor.toISOString().slice(0, 10));
-    cursor.setDate(cursor.getDate() + 1);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return days;
 }
@@ -104,31 +124,58 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
   const [data, setData] = useState<ScheduleData>(initial || EMPTY_DATA);
   const [assignees, setAssignees] = useState<Assignee[]>([]);
   const [assignmentUserByVisit, setAssignmentUserByVisit] = useState<Record<string, string>>({});
-  const [targetDateByVisit, setTargetDateByVisit] = useState<Record<string, string>>({});
+  const [targetDateByVisit, setTargetDateByVisit] = useState<Record<string, VisitDateDraft>>({});
   const [draggedVisitId, setDraggedVisitId] = useState("");
   const [busyKey, setBusyKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const scheduleHeadingRef = useRef<HTMLHeadingElement>(null);
+  const earliestFrom = shiftCalendarDate(to, -MAX_SCHEDULE_DAY_SPAN);
+  const latestTo = shiftCalendarDate(from, MAX_SCHEDULE_DAY_SPAN);
 
   const load = useCallback(async () => {
     if (!enabled) return;
     setIsLoading(true);
     setError(null);
     const params = new URLSearchParams();
-    if (from) params.set("from", new Date(from + "T00:00:00").toISOString());
-    if (to) params.set("to", new Date(to + "T23:59:59").toISOString());
-    if (status) params.set("status", status);
     try {
+      const queryBounds = scheduleQueryBounds(from, to);
+      if (!queryBounds) throw new Error(t("invalidDateRange"));
+      params.set("from", queryBounds.from);
+      params.set("to", queryBounds.to);
+      if (status) params.set("status", status);
       const response = await fetch("/api/v2/schedule?" + params.toString(), { cache: "no-store" });
       const payload = await response.json() as { success?: boolean; data?: ScheduleData; error?: { message?: string } };
       if (!response.ok || !payload.success || !payload.data) throw new Error(payload.error?.message || "The schedule could not be loaded.");
-      setData(payload.data);
+      const visibleItems = payload.data.items.filter((item) => isVisitWithinDateRange(
+        item.visit.scheduledStart,
+        item.visit.timezone,
+        from,
+        to,
+      ));
+      const scheduledDateByVisit = Object.fromEntries(visibleItems.flatMap((item) => {
+        const key = dateKeyInTimeZone(item.visit.scheduledStart, item.visit.timezone);
+        return key ? [[item.visit.id, key]] : [];
+      }));
+      setData({
+        ...payload.data,
+        items: visibleItems,
+        summary: {
+          total: visibleItems.length,
+          unscheduled: visibleItems.filter((item) => !item.visit.scheduledStart && !["COMPLETED", "CANCELLED"].includes(item.visit.status)).length,
+          scheduled: visibleItems.filter((item) => Boolean(item.visit.scheduledStart) && ["CONFIRMED", "IN_PROGRESS"].includes(item.visit.status)).length,
+          inProgress: visibleItems.filter((item) => item.visit.status === "IN_PROGRESS").length,
+          materialBlockers: visibleItems.filter((item) => item.materials.blockers > 0).length,
+        },
+      });
+      setTargetDateByVisit((current) => reconcileVisitDateDrafts(current, scheduledDateByVisit));
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : "The schedule could not be loaded.");
     } finally {
       setIsLoading(false);
     }
-  }, [enabled, from, status, to]);
+  }, [enabled, from, status, t, to]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => { void load(); }, 250);
@@ -169,9 +216,16 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
 
   const reschedule = async (item: ScheduleItem, targetDate: string) => {
     if (!canRescheduleVisit(item.visit.status) || !targetDate || targetDate < from || targetDate > to) return;
-    if (targetDate === dateKey(item.visit.scheduledStart)) return;
+    if (targetDate === dateKeyInTimeZone(item.visit.scheduledStart, item.visit.timezone)) return;
     const oldStart = item.visit.scheduledStart ? new Date(item.visit.scheduledStart) : null;
-    const start = new Date(targetDate + "T" + (oldStart ? String(oldStart.getHours()).padStart(2, "0") + ":" + String(oldStart.getMinutes()).padStart(2, "0") : "09:00"));
+    const wallClock = oldStart ? wallClockInTimeZone(oldStart, item.visit.timezone) : { hour: 9, minute: 0 };
+    const start = wallClock ? dateTimeInTimeZone(targetDate, wallClock.hour, wallClock.minute, item.visit.timezone) : null;
+    setAnnouncement("");
+    setError(null);
+    if (!start) {
+      setError(t("invalidVisitDate"));
+      return;
+    }
     const oldEnd = item.visit.scheduledEnd ? new Date(item.visit.scheduledEnd) : null;
     const duration = oldStart && oldEnd && oldEnd > oldStart ? oldEnd.getTime() - oldStart.getTime() : 6 * 60 * 60 * 1000;
     const end = new Date(start.getTime() + duration);
@@ -195,7 +249,14 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
       const payload = await response.json() as { success?: boolean; error?: { message?: string } };
       if (!response.ok || !payload.success) throw new Error(payload.error?.message || "The visit could not be rescheduled.");
       setTargetDateByVisit((current) => clearVisitDateDraft(current, item.visit.id));
+      setAnnouncement(t("visitMoved", {
+        customerName: item.project.customerName,
+        projectCode: item.project.projectCode,
+        scheduledAt: dateTimeLabel(item.visit.scheduledStart, locale, item.visit.timezone),
+        date: dateLabel(targetDate, locale),
+      }));
       await load();
+      window.requestAnimationFrame(() => scheduleHeadingRef.current?.focus());
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : "The visit could not be rescheduled.");
     } finally {
@@ -209,7 +270,7 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
   const scheduledByDay = useMemo(() => {
     const grouped = new Map<string, ScheduleItem[]>();
     for (const item of data.items) {
-      const key = dateKey(item.visit.scheduledStart);
+      const key = dateKeyInTimeZone(item.visit.scheduledStart, item.visit.timezone);
       if (!key) continue;
       const items = grouped.get(key) || [];
       items.push(item);
@@ -232,6 +293,7 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
   return (
     <div data-bagui="schedule-workspace" className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
         <div className="flex items-center justify-between gap-4">
           <Link href={"/" + locale + "/admin/operations"} className="inline-flex items-center gap-2 text-sm font-medium text-[#8b949e] hover:text-[#f0f6fc]"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> Operations workspace</Link>
           <Button type="button" variant="quiet" size="sm" onClick={() => void load()} disabled={isLoading} className="text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"><RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} aria-hidden="true" /> Refresh</Button>
@@ -249,10 +311,10 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
         </header>
 
         <section className="flex flex-col gap-3 rounded-xl border border-[#30363d] bg-[#161b22] p-4 sm:flex-row sm:items-end">
-          <label className="text-xs text-[#8b949e]">From<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="mt-1 min-h-10 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#f0f6fc]" /></label>
-          <label className="text-xs text-[#8b949e]">To<input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="mt-1 min-h-10 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#f0f6fc]" /></label>
+          <label className="text-xs text-[#8b949e]">From<input type="date" required min={earliestFrom} max={to} value={from} onChange={(event) => { const nextFrom = event.target.value; if (!nextFrom) return; setFrom(nextFrom); if (to < nextFrom) setTo(nextFrom); else if (to > shiftCalendarDate(nextFrom, MAX_SCHEDULE_DAY_SPAN)) setTo(shiftCalendarDate(nextFrom, MAX_SCHEDULE_DAY_SPAN)); }} className="mt-1 min-h-10 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#f0f6fc]" /></label>
+          <label className="text-xs text-[#8b949e]">To<input type="date" required min={from} max={latestTo} value={to} onChange={(event) => { const nextTo = event.target.value; if (!nextTo) return; setTo(nextTo); if (from > nextTo) setFrom(nextTo); else if (from < shiftCalendarDate(nextTo, -MAX_SCHEDULE_DAY_SPAN)) setFrom(shiftCalendarDate(nextTo, -MAX_SCHEDULE_DAY_SPAN)); }} className="mt-1 min-h-10 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#f0f6fc]" /></label>
           <label className="text-xs text-[#8b949e]">Visit status<select value={status} onChange={(event) => setStatus(event.target.value)} className="mt-1 min-h-10 min-w-44 rounded-md border border-[#30363d] bg-[#0d1117] px-3 text-sm text-[#c9d1d9]"><option value="">All visits</option><option value="PLANNED">Planned</option><option value="CONFIRMED">Confirmed</option><option value="IN_PROGRESS">In progress</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select></label>
-          <span className="text-xs text-[#8b949e] sm:ml-auto">{t("dragHelp")}</span>
+          <div className="text-xs text-[#8b949e] sm:ml-auto"><p>{t("dateRangeHelp")}</p><p className="mt-1">{t("dragHelp")}</p></div>
         </section>
 
         {error ? <div role="alert" className="flex items-start gap-2 rounded-md border border-[#f85149]/40 bg-[#f85149]/10 p-3 text-sm text-[#ff7b72]"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{error}</div> : null}
@@ -272,41 +334,49 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#30363d] bg-[#161b22]">
+          <div className="min-w-0 space-y-3">
+            <h2 ref={scheduleHeadingRef} tabIndex={-1} className="text-lg font-semibold text-[#f0f6fc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#79c0ff]">{t("scheduledVisits")}</h2>
+            <div className="overflow-x-auto rounded-xl border border-[#30363d] bg-[#161b22]">
             <div className="flex min-w-[900px] border-b border-[#30363d]">
-              {dayKeys.map((day) => <div key={day} className="min-w-[210px] flex-1 border-r border-[#30363d] p-4 last:border-r-0"><p className="text-xs font-semibold text-[#f0f6fc]">{dateLabel(day)}</p><p className="mt-1 text-[11px] text-[#8b949e]">{(scheduledByDay.get(day) || []).length} visit{(scheduledByDay.get(day) || []).length === 1 ? "" : "s"}</p></div>)}
+              {dayKeys.map((day) => <div key={day} className="min-w-[210px] flex-1 border-r border-[#30363d] p-4 last:border-r-0"><p className="text-xs font-semibold text-[#f0f6fc]">{dateLabel(day, locale)}</p><p className="mt-1 text-[11px] text-[#8b949e]">{(scheduledByDay.get(day) || []).length} visit{(scheduledByDay.get(day) || []).length === 1 ? "" : "s"}</p></div>)}
             </div>
             <div className="flex min-h-[360px] min-w-[900px]">
               {dayKeys.map((day) => <div key={day} className="min-w-[210px] flex-1 space-y-3 border-r border-[#30363d] p-3 last:border-r-0" onDragOver={(event) => event.preventDefault()} onDrop={() => { const item = data.items.find((candidate) => candidate.visit.id === draggedVisitId); if (item) void reschedule(item, day); }}>
                 {(scheduledByDay.get(day) || []).map((item) => {
                   const canMove = canRescheduleVisit(item.visit.status);
-                  const scheduledDate = dateKey(item.visit.scheduledStart) || day;
-                  const targetDate = targetDateByVisit[item.visit.id] || scheduledDate;
+                  const scheduledDate = dateKeyInTimeZone(item.visit.scheduledStart, item.visit.timezone) || day;
+                  const draft = targetDateByVisit[item.visit.id];
+                  const targetDate = draft?.originalDate === scheduledDate ? draft.targetDate : scheduledDate;
                   const isMoving = busyKey === "move:" + item.visit.id;
+                  const visitControlContext = {
+                    customerName: item.project.customerName,
+                    projectCode: item.project.projectCode,
+                    scheduledAt: dateTimeLabel(item.visit.scheduledStart, locale, item.visit.timezone),
+                  };
 
                   return <article key={item.visit.id} draggable={canMove} onDragStart={() => setDraggedVisitId(item.visit.id)} className={cn("rounded-lg border bg-[#0d1117] p-3", canMove && "cursor-grab active:cursor-grabbing", item.visit.status === "IN_PROGRESS" ? "border-[#58a6ff]/50" : "border-[#30363d]", isMoving && "opacity-60")}>
                   <div className="flex items-start justify-between gap-2"><p className="font-mono text-xs text-[#79c0ff]">{item.project.projectCode}</p><span className={cn("rounded-full border px-2 py-1 text-[10px] font-semibold", statusTone(item.visit.status))}>{item.visit.status}</span></div>
                   <h3 className="mt-2 text-sm font-semibold text-[#f0f6fc]">{item.project.customerName}</h3>
-                  <p className="mt-1 text-xs text-[#8b949e]">{item.visit.visitType} · {dateTimeLabel(item.visit.scheduledStart)}</p>
+                  <p className="mt-1 text-xs text-[#8b949e]">{item.visit.visitType} · {dateTimeLabel(item.visit.scheduledStart, locale, item.visit.timezone)}</p>
                   <p className="mt-2 flex items-start gap-1 text-xs text-[#8b949e]"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{item.project.siteLabel}</p>
                   {item.assignments.length > 0 ? <p className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-[#c9d1d9]"><UserRound className="h-3.5 w-3.5 text-[#79c0ff]" aria-hidden="true" />{item.assignments.filter((assignment) => assignment.status !== "SUPERSEDED").map((assignment) => assignment.assignee?.name || "Unassigned").join(", ")}</p> : <p className="mt-2 text-[11px] text-[#e3b341]">No technician assigned</p>}
                   {item.materials.blockers > 0 ? <p className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-[#ff7b72]"><Package className="h-3.5 w-3.5" aria-hidden="true" />{item.materials.blockers} material blocker{item.materials.blockers === 1 ? "" : "s"}</p> : <p className="mt-2 flex items-center gap-1 text-[11px] text-[#7ee787]"><CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />Materials ready</p>}
                   {canMove ? <details className="mt-3 border-t border-[#30363d] pt-2">
-                    <summary aria-label={t("chooseDateFor", { customerName: item.project.customerName })} className="min-h-11 cursor-pointer py-2 text-xs font-semibold text-[#79c0ff] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#79c0ff]">{t("chooseDate")}</summary>
+                    <summary aria-label={t("chooseDateFor", visitControlContext)} className="min-h-11 cursor-pointer py-2 text-xs font-semibold text-[#79c0ff] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#79c0ff]">{t("chooseDate")}</summary>
                     <div className="mt-2 space-y-2">
                       <label className="block text-xs text-[#8b949e]">
                         {t("targetDate")}
                         <input
                           type="date"
-                          aria-label={t("targetDateFor", { customerName: item.project.customerName })}
+                          aria-label={t("targetDateFor", visitControlContext)}
                           value={targetDate}
                           min={from}
                           max={to}
-                          onChange={(event) => setTargetDateByVisit((current) => ({ ...current, [item.visit.id]: event.target.value }))}
+                          onChange={(event) => setTargetDateByVisit((current) => ({ ...current, [item.visit.id]: { originalDate: scheduledDate, targetDate: event.target.value } }))}
                           className="mt-1 min-h-11 w-full rounded-md border border-[#30363d] bg-[#161b22] px-3 text-sm text-[#f0f6fc] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#79c0ff]"
                         />
                       </label>
-                      <Button type="button" size="sm" aria-label={t("moveVisitFor", { customerName: item.project.customerName })} onClick={() => void reschedule(item, targetDate)} disabled={!targetDate || targetDate === scheduledDate || targetDate < from || targetDate > to || isMoving}>
+                      <Button type="button" size="sm" aria-label={t("moveVisitFor", visitControlContext)} onClick={() => void reschedule(item, targetDate)} disabled={!targetDate || targetDate === scheduledDate || targetDate < from || targetDate > to || isMoving}>
                         {isMoving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
                         {t("moveVisit")}
                       </Button>
@@ -317,10 +387,11 @@ export default function ScheduleWorkspaceClient({ enabled, initial }: { enabled:
                 {(scheduledByDay.get(day) || []).length === 0 ? <p className="py-12 text-center text-xs text-[#6e7681]">Drop a visit here</p> : null}
               </div>)}
             </div>
+            </div>
           </div>
         </section>
 
-        {isLoading ? <div className="flex items-center justify-center gap-2 text-xs text-[#8b949e]"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Refreshing schedule</div> : null}
+        {isLoading ? <div role="status" aria-live="polite" className="flex items-center justify-center gap-2 text-xs text-[#8b949e]"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t("refreshingSchedule")}</div> : null}
         <Link href={"/" + locale + "/admin/settings/feature-toggles"} className={cn(buttonVariants({ variant: "quiet", size: "sm" }), "text-[#8b949e]")}>Manage rollout flags</Link>
       </div>
     </div>
