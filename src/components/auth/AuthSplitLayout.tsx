@@ -51,12 +51,6 @@ export default function AuthSplitLayout({
     >
       {/* ─── LEFT COLUMN (Form) ─── */}
       <div className="solar-auth-panel relative z-10 flex min-h-screen w-full flex-col justify-center px-4 py-8 sm:px-8 lg:w-[44%] lg:px-14">
-        {/* Manga Halftone Overlay */}
-        <div
-          aria-hidden="true"
-          className="solar-auth-halftone pointer-events-none absolute inset-0 z-0"
-        />
-
         <header role="banner" className="solar-auth-header absolute inset-x-0 top-0 z-20 flex min-h-20 items-center justify-between gap-3 px-4 py-4 sm:px-8 lg:px-10">
           <Link
             href={`/${locale}`}
@@ -109,10 +103,6 @@ export default function AuthSplitLayout({
           </div>
         </header>
 
-        {/* Ambient Organic Blobs */}
-        <div className="blob-organic-1 pointer-events-none absolute -top-20 -left-20 h-80 w-80 bg-[#B7D1EA]/15 blur-3xl" />
-        <div className="blob-organic-2 pointer-events-none absolute -bottom-20 -right-20 h-80 w-80 bg-[#DCE8F5]/35 blur-3xl" />
-
         <main
           id="main-content"
           tabIndex={-1}
@@ -152,25 +142,25 @@ export default function AuthSplitLayout({
         </main>
       </div>
 
-      {/* ─── RIGHT COLUMN (Image with Manga Slanted Cut) ─── */}
+      {/* ─── RIGHT COLUMN (Solar Atelier home imagery) ─── */}
       <aside className="solar-auth-art relative hidden min-h-screen w-full lg:block lg:w-[56%]">
         <div className="solar-auth-art-frame absolute inset-4 overflow-hidden rounded-[2rem] bg-slate-950 lg:inset-y-4 lg:right-4 lg:left-0">
           <Image
-            src="/asset/solia-loginbg.png"
+            src="/asset/home-editorial/hero-rooftop.webp"
             alt=""
             fill
             sizes="(min-width: 1024px) 60vw, 0px"
-            className="object-cover object-[75%_center]"
+            className="object-cover object-[center_42%]"
             priority
           />
           <div className="solar-auth-art-overlay absolute inset-0" />
 
           <div className="relative flex h-full min-h-screen flex-col justify-end p-8 sm:p-10 xl:p-14">
-            <div className="solar-auth-art-copy ml-auto w-full max-w-sm space-y-4 text-right text-white">
+            <div className="solar-auth-art-copy w-full max-w-sm space-y-4 text-left text-white">
               <h2 className="text-balance text-3xl font-black leading-tight tracking-[-0.03em]">
                 {t("headerTitle")}
               </h2>
-              <p className="ml-auto max-w-[40ch] text-pretty text-base font-semibold leading-7 text-slate-100">
+              <p className="max-w-[40ch] text-pretty text-base font-semibold leading-7 text-slate-100">
                 {t("headerSubtitle")}
               </p>
             </div>
