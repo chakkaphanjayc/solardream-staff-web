@@ -348,7 +348,7 @@ export default function WorkflowBuilderClient({
           </div>
         </aside>
 
-        <main className="min-w-0 p-4 sm:p-6">
+        <div className="min-w-0 p-4 sm:p-6">
           <div className="grid gap-4 border-b border-[#1E293B] pb-6 md:grid-cols-[minmax(0,1fr)_220px]">
             <div className="space-y-4">
               <label className="block">
@@ -625,7 +625,7 @@ export default function WorkflowBuilderClient({
               );
             })}
           </div>
-        </main>
+        </div>
       </div>
 
       {!selectedTemplate && templates.length === 0 && (

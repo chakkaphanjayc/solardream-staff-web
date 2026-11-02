@@ -112,7 +112,7 @@ export default function AuditLogsClient({ initialResult }: { initialResult: Audi
   };
 
   return (
-    <main className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-5">
         <header className="rounded-md border border-[#30363d] bg-[#161b22] p-5">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -364,6 +364,6 @@ export default function AuditLogsClient({ initialResult }: { initialResult: Audi
           </aside>
         </div>
       )}
-    </main>
+    </div>
   );
 }

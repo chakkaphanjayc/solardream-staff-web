@@ -4260,6 +4260,7 @@
     "searchConsole": "ค้นหาคอนโซล…",
     "openNavigation": "เปิดเมนูผู้ดูแล",
     "closeNavigation": "ปิดเมนูผู้ดูแล",
+    "navigationDialog": "เมนูผู้ดูแล",
     "breadcrumbsLabels": {
       "admin": "ผู้ดูแล",
       "sales": "ฝ่ายขาย",
@@ -4291,6 +4292,22 @@
       "connections": "การเชื่อมต่อช่องทาง",
       "messages": "กล่องข้อความ"
     }
+  },
+  "AdminSchedule": {
+    "dragHelp": "ลากนัดหมายไปยังวันอื่น หรือเลือกวันที่จากการ์ดนัดหมาย",
+    "dateRangeHelp": "เลือกช่วงเวลาได้สูงสุด 31 วัน โดยวันที่ในปฏิทินอิงตามเขตเวลาของแต่ละนัดหมาย",
+    "scheduledVisits": "นัดหมายที่กำหนดแล้ว",
+    "chooseDate": "เลือกวันที่",
+    "chooseDateFor": "เลือกวันที่สำหรับ {customerName} โครงการ {projectCode} ซึ่งนัดหมายไว้ {scheduledAt}",
+    "targetDate": "วันที่นัดหมายใหม่",
+    "targetDateFor": "วันที่นัดหมายใหม่สำหรับ {customerName} โครงการ {projectCode} ซึ่งนัดหมายไว้ {scheduledAt}",
+    "moveVisit": "ย้ายนัดหมาย",
+    "moveVisitFor": "ย้ายนัดหมายของ {customerName} โครงการ {projectCode} ซึ่งนัดหมายไว้ {scheduledAt}",
+    "inProgressCannotMove": "ไม่สามารถเลื่อนนัดหมายที่กำลังดำเนินการได้",
+    "invalidVisitDate": "วันที่และเวลานัดหมายนี้ไม่มีอยู่ในเขตเวลาของนัดหมาย โปรดเลือกวันอื่น",
+    "visitMoved": "ย้ายนัดหมายของ {customerName} โครงการ {projectCode} ที่นัดไว้ {scheduledAt} ไปเป็นวันที่ {date} แล้ว",
+    "invalidDateRange": "โปรดเลือกช่วงวันที่ไม่เกิน 31 วันและเป็นช่วงเวลาที่ถูกต้อง",
+    "refreshingSchedule": "กำลังอัปเดตตารางนัดหมาย"
   },
   "ProfileGeneralInfo": {
     "title": "ข้อมูลทั่วไป",
@@ -4745,6 +4762,97 @@
     "cancel": "ยกเลิก",
     "close": "ปิดหน้าต่างขอแก้ไข"
   },
+  "AdminProjects": {
+    "customerNameUnavailable": "ไม่พบชื่อลูกค้า",
+    "phoneUnavailable": "ไม่ได้ระบุหมายเลขโทรศัพท์",
+    "valueUnavailable": "ไม่ได้ระบุ",
+    "queueUpdates": "เข้าคิวการแจ้งเตือน",
+    "queueMilestoneTitle": "เข้าคิวการแจ้งเตือนโครงการ",
+    "closeQueueDialog": "ปิดหน้าต่างแจ้งเตือนโครงการ",
+    "queueMilestoneDescription": "เข้าคิวการแจ้งเตือนลูกค้าเกี่ยวกับ {customer} ({systemSize}) โดยคำขอนี้ไม่เปลี่ยนสถานะโครงการ",
+    "milestoneToNotify": "ขั้นตอนโครงการที่จะแจ้งให้ลูกค้าทราบ:",
+    "richMenuPending": "เมนู LINE กำลังรออัปเดต",
+    "notificationDetails": "รายละเอียดการแจ้งเตือนลูกค้า (เข้าคิวรอส่ง):",
+    "projectStatusUnchangedNote": "คำขอนี้เข้าคิวการแจ้งเตือน สถานะโครงการจะเปลี่ยนเมื่อได้รับการยืนยันจากระบบหลัก",
+    "customerNameRequiredForCompletion": "ต้องมีชื่อลูกค้าก่อนส่งคำขอแจ้งการเสร็จสิ้นโครงการ",
+    "noProjectsToQueue": "เลือกโครงการที่มีขั้นตอนถัดไปเพื่อใส่ในข้อความแจ้งเตือน",
+    "completedProjectsNoNextMilestone": "โครงการที่เสร็จสิ้นแล้วไม่มีขั้นตอนถัดไปให้เข้าคิวแจ้งเตือน",
+    "bulkQueueRequestFailed": "ไม่สามารถเข้าคิวคำขอแจ้งเตือนที่เลือกได้ กรุณาลองอีกครั้ง",
+    "milestoneNotificationQueued": "เข้าคิวการแจ้งเตือนความคืบหน้าแล้ว สถานะโครงการยังไม่เปลี่ยนจนกว่าจะมีข้อมูลยืนยันจากระบบ",
+    "completionNotificationQueued": "เข้าคิวการแจ้งเตือนโครงการเสร็จสิ้นแล้ว แต่ยังไม่ยืนยันสถานะโครงการ การส่ง LINE หรือการออกใบรับประกัน",
+    "completionNotificationQueuedMenuPending": "เข้าคิวการแจ้งเตือนโครงการเสร็จสิ้นแล้ว เมนู LINE กำลังรออัปเดต โดยยังไม่ยืนยันการส่งข้อความหรือการออกใบรับประกัน",
+    "bulkMilestoneNotificationQueued": "เข้าคิวการแจ้งเตือน {count} โครงการแล้ว สถานะโครงการยังไม่เปลี่ยนจนกว่าจะได้รับการยืนยัน",
+    "bulkCompletionNotificationQueued": "เข้าคิวการแจ้งเตือนโครงการเสร็จสิ้น {count} รายการแล้ว ยังไม่ยืนยันการส่ง LINE หรือการออกใบรับประกัน และเมนู LINE กำลังรออัปเดต",
+    "notificationQueueFailed": "ไม่สามารถเข้าคิวการแจ้งเตือนได้",
+    "notificationQueueConnectionFailed": "ไม่สามารถเชื่อมต่อบริการแจ้งเตือนได้",
+    "bulkNotificationQueueFailed": "ไม่สามารถเข้าคิวการแจ้งเตือน {count} รายการได้"
+  },
+  "TechWorkOrder": {
+    "loadingWorkOrder": "กำลังโหลดใบสั่งงาน…",
+    "customerNameUnavailable": "ไม่พบชื่อลูกค้า",
+    "valueUnavailable": "ไม่ได้ระบุ",
+    "panelCount": "{count} แผง",
+    "customerSummary": "ลูกค้า: {customerName}",
+    "customerSummaryWithSize": "ลูกค้า: {customerName} · ระบบโซลาร์ {systemSize}",
+    "statusOpen": "เปิดงาน",
+    "statusScheduled": "กำหนดเวลาแล้ว",
+    "statusInProgress": "กำลังดำเนินการ",
+    "statusHandoverPending": "รอส่งมอบงาน",
+    "statusCompleted": "เสร็จสมบูรณ์",
+    "statusCancelled": "ยกเลิกแล้ว",
+    "navigateWithMaps": "นำทางด้วย Google Maps",
+    "callCustomer": "โทรหาลูกค้า",
+    "siteAddress": "ที่อยู่ติดตั้ง",
+    "projectScope": "อุปกรณ์ในโครงการ",
+    "solarPanels": "แผงโซลาร์",
+    "inverter": "อินเวอร์เตอร์",
+    "checklistTitle": "รายการตรวจสอบคุณภาพงานติดตั้ง",
+    "checklist": {
+      "roofMounting": "ตรวจสอบโครงสร้างหลังคาและอุปกรณ์ยึดแผง",
+      "inverterWiring": "ติดตั้งสายไฟ DC/AC และตู้คอนไบเนอร์",
+      "safetyGrounding": "ตรวจสอบระบบสายดินและอุปกรณ์ป้องกันไฟกระชาก",
+      "commissioningTest": "ทดสอบการเชื่อมต่อระบบไฟและการทำงานของอินเวอร์เตอร์",
+      "siteCleanliness": "ทำความสะอาดพื้นที่และจัดเก็บอุปกรณ์ส่วนเกิน"
+    },
+    "photoRequired": "ต้องแนบรูปถ่ายตรวจสอบคุณภาพ",
+    "photoSectionTitle": "รูปถ่ายตรวจสอบคุณภาพ",
+    "photoCategories": {
+      "roofMounting": "การติดตั้งแผงบนหลังคา",
+      "inverterWiring": "การเดินสายอินเวอร์เตอร์",
+      "combinerBox": "ตู้คอนไบเนอร์",
+      "safetyGrounding": "ระบบสายดินและความปลอดภัย"
+    },
+    "viewPhotoInDrive": "ดูรูปใน Google Drive",
+    "uploading": "กำลังอัปโหลด…",
+    "attachPhoto": "ถ่ายรูปหรือแนบไฟล์",
+    "photoUploadFailed": "อัปโหลดรูปภาพไม่สำเร็จ",
+    "photoUploaded": "อัปโหลดรูป {category} ไปยัง Google Drive แล้ว",
+    "signatureRequired": "กรุณาให้ลูกค้าลงนามก่อนส่งมอบงาน",
+    "handoverFailed": "ไม่สามารถส่งมอบงานได้",
+    "handoverSucceeded": "ส่งมอบงานแล้วและสร้างใบรับรอง PDF เรียบร้อย",
+    "completeAndHandover": "ทำงานติดตั้งเสร็จและส่งมอบงาน",
+    "handoverCompleted": "ส่งมอบงานและออกใบรับรองเรียบร้อยแล้ว",
+    "viewHandoverPdf": "ดูใบรับรองการส่งมอบงาน (PDF)",
+    "handoverDialogTitle": "ลายเซ็นลูกค้าสำหรับการส่งมอบงาน",
+    "closeHandoverDialog": "ปิดหน้าต่างส่งมอบงาน",
+    "handoverGreeting": "เรียนคุณ {customerName}",
+    "handoverInstructionsWithSize": "ลงนามด้านล่างเพื่อยืนยันว่าการติดตั้งระบบโซลาร์ขนาด {systemSize} เสร็จสมบูรณ์และผ่านการทดสอบความปลอดภัยแล้ว",
+    "handoverInstructions": "ลงนามด้านล่างเพื่อยืนยันว่าการติดตั้งระบบโซลาร์เสร็จสมบูรณ์และผ่านการทดสอบความปลอดภัยแล้ว",
+    "signaturePadLabel": "ลายเซ็นลูกค้า",
+    "signatureKeyboardInstructions": "ลงลายเซ็นด้วยการสัมผัสหรือเมาส์ หรือโฟกัสที่พื้นที่ลงนามเพื่อใช้คีย์บอร์ด ใช้ปุ่มลูกศรเลื่อนปากกา กด Space หรือ Enter เพื่อเริ่มหรือพักเส้น กด Shift พร้อมปุ่มลูกศรเพื่อเลื่อนครั้งละมากขึ้น และกด Escape เพื่อยกปากกา กด Tab เพื่อออกจากพื้นที่ลงนาม",
+    "keyboardSignatureStarted": "เริ่มลงลายเซ็นด้วยคีย์บอร์ดแล้ว",
+    "keyboardSignaturePaused": "พักการลงลายเซ็นด้วยคีย์บอร์ดแล้ว",
+    "keyboardPenMoved": "เลื่อนปากกาไปทาง{direction}แล้ว ตำแหน่งจากขอบซ้าย {x} พิกเซล และจากขอบบน {y} พิกเซล",
+    "directionLeft": "ซ้าย",
+    "directionRight": "ขวา",
+    "directionUp": "ขึ้น",
+    "directionDown": "ลง",
+    "signatureCleared": "ล้างลายเซ็นแล้ว",
+    "clearSignature": "ล้างลายเซ็น",
+    "cancel": "ยกเลิก",
+    "creatingHandoverPdf": "กำลังสร้าง PDF ส่งมอบงาน…",
+    "confirmHandover": "ยืนยันและสร้าง PDF ส่งมอบงาน"
+  },
   "InstallerWorkflow": {
     "noActiveStage": "ไม่พบขั้นตอนที่กำลังดำเนินการ",
     "photoUploaded": "อัปโหลดรูปภาพแล้ว",
@@ -5186,6 +5294,7 @@
     },
     "tabs": {
       "label": "มุมมองกระบวนการขาย",
+      "mobileHint": "ปัดเพื่อดูมุมมองเพิ่มเติม",
       "leads": "ลูกค้าเป้าหมาย ({count})",
       "quotations": "ใบเสนอราคา ({count})",
       "threads": "สายสัมพันธ์ลูกค้า ({count})",
@@ -5258,6 +5367,115 @@
       },
       "emptyTitle": "ไม่พบสายสัมพันธ์ลูกค้า",
       "emptyDescription": "ลองค้นหาใหม่หรือล้างตัวกรองที่ใช้งานอยู่"
+    },
+    "dialogs": {
+      "createManualRequestTitle": "สร้างคำขอด้วยตนเอง (ลูกค้าเป้าหมายออฟไลน์)",
+      "closeCreateManualRequest": "ปิดหน้าต่างสร้างคำขอ",
+      "leadRecordTitle": "ข้อมูลลูกค้าเป้าหมายของ {customerName}",
+      "leadRecordFallback": "ข้อมูลลูกค้าเป้าหมาย",
+      "closeLeadRecord": "ปิดหน้าต่างข้อมูลลูกค้าเป้าหมาย",
+      "customerRecordTitle": "ข้อมูลลูกค้าของ {customerName}",
+      "customerRecordFallback": "ข้อมูลลูกค้า",
+      "closeCustomerRecord": "ปิดแผงข้อมูลลูกค้า"
+    }
+  },
+  "OperationsWorkspace": {
+    "disabled": {
+      "title": "พื้นที่ทำงานฝ่ายปฏิบัติการอยู่ระหว่างเตรียมการ",
+      "description": "เปิด OPS_V2_PROJECTS ในการตั้งค่าฟีเจอร์ เมื่อทีมพร้อมแสดงข้อมูลโครงการจากโมเดลหลัก"
+    },
+    "header": {
+      "eyebrow": "ควบคุมการส่งมอบจากข้อมูลหลัก",
+      "title": "พื้นที่ทำงานฝ่ายปฏิบัติการ",
+      "description": "มุมมองโครงการเดียวสำหรับความพร้อมของสถานที่ งานวิศวกรรม ความพร้อมของวัสดุ การจัดตาราง การดำเนินงานภาคสนาม การส่งมอบ และการเปิดใช้งานการรับประกัน"
+    },
+    "overview": {
+      "label": "ภาพรวมโครงการ",
+      "visibleProjects": "โครงการที่แสดง",
+      "activeDelivery": "การส่งมอบที่กำลังดำเนินการ",
+      "needsPreparation": "ต้องเตรียมการ",
+      "completed": "เสร็จสิ้นแล้ว"
+    },
+    "filters": {
+      "searchLabel": "ค้นหาโครงการ",
+      "searchPlaceholder": "ค้นหาโครงการ ลูกค้า หรือสถานที่",
+      "stateLabel": "กรองตามสถานะโครงการ",
+      "allStates": "ทุกสถานะของโครงการ"
+    },
+    "actions": {
+      "openFeatureToggles": "เปิดการตั้งค่าฟีเจอร์",
+      "integrationMonitor": "ติดตามการเชื่อมต่อระบบ",
+      "refresh": "รีเฟรช",
+      "openProject": "เปิดโครงการ {projectCode}"
+    },
+    "table": {
+      "project": "โครงการ",
+      "customerSite": "ลูกค้า / สถานที่",
+      "lifecycle": "ขั้นตอนโครงการ",
+      "erpProjection": "สถานะ ERP",
+      "updated": "อัปเดตเมื่อ",
+      "open": "เปิด"
+    },
+    "empty": {
+      "loadingProjects": "กำลังโหลดโครงการ…",
+      "noMatches": "ไม่พบโครงการหลักที่ตรงกับตัวกรองเหล่านี้",
+      "siteDetailsPending": "รอรายละเอียดสถานที่"
+    },
+    "errors": {
+      "loadFailed": "ไม่สามารถโหลดโครงการได้"
+    },
+    "states": {
+      "new": "ใหม่",
+      "siteReview": "ตรวจสอบสถานที่",
+      "engineering": "งานวิศวกรรม",
+      "materialPreparation": "เตรียมวัสดุ",
+      "readyToSchedule": "พร้อมจัดตาราง",
+      "scheduled": "จัดตารางแล้ว",
+      "inProgress": "กำลังดำเนินการ",
+      "qaCommissioning": "ตรวจสอบคุณภาพและทดสอบระบบ",
+      "handover": "ส่งมอบ",
+      "warrantyActivation": "เปิดใช้งานการรับประกัน",
+      "completed": "เสร็จสิ้น"
+    },
+    "syncStatuses": {
+      "synced": "ซิงก์แล้ว",
+      "syncing": "กำลังซิงก์",
+      "pending": "รอดำเนินการ",
+      "failed": "ซิงก์ไม่สำเร็จ",
+      "localOnly": "มีเฉพาะข้อมูลในระบบนี้"
+    }
+  },
+  "ProjectWorkspaceControls": {
+    "erpItemCode": "รหัสสินค้า ERPNext",
+    "check": "ตรวจสอบ",
+    "visitStart": "วันและเวลาเริ่มเข้าหน้างาน",
+    "visitEnd": "วันและเวลาสิ้นสุด",
+    "confirmVisit": "ยืนยันการนัดหมาย",
+    "materialStatus": "สถานะวัสดุ",
+    "materialName": "ชื่อวัสดุหรือสินค้า",
+    "materialQuantity": "จำนวน",
+    "addMaterial": "เพิ่มรายการ",
+    "scanSerial": "หมายเลขซีเรียลสำหรับสแกนหรือยืนยัน",
+    "verify": "ตรวจสอบ",
+    "resolveItemCode": "รหัสสินค้า ERPNext สำหรับจับคู่",
+    "resolve": "จับคู่สินค้า",
+    "assetProductName": "ชื่อสินค้า",
+    "assetSerialNumber": "หมายเลขซีเรียล",
+    "warrantyProvider": "ผู้ให้บริการรับประกัน (ไม่บังคับ)",
+    "registerAsset": "ลงทะเบียน",
+    "assignmentVisit": "กำหนดการเข้าหน้างาน",
+    "assignmentTask": "งาน (ไม่บังคับ)",
+    "assignmentTechnician": "ช่างเทคนิค",
+    "chooseVisit": "เลือกการเข้าหน้างาน",
+    "visitLevelAssignment": "มอบหมายงานระดับการเข้าหน้างาน",
+    "chooseTechnician": "เลือกช่างเทคนิค",
+    "assignFieldWork": "มอบหมายงานภาคสนาม",
+    "statusLabels": {
+      "RESERVED": "สำรองแล้ว",
+      "PICKED": "หยิบแล้ว",
+      "ISSUED": "เบิกจ่ายแล้ว",
+      "SHORT": "วัสดุไม่เพียงพอ",
+      "CANCELLED": "ยกเลิกแล้ว"
     }
   },
   "InboundRequests": {

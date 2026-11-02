@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { connection } from "next/server";
 import "./admin.css";
 
 import { requireStaff } from "@/lib/auth-guard";
 import AdminMobileNav from "@/components/admin/AdminMobileNav";
+import AdminPageSkeleton from "@/components/admin/AdminPageSkeleton";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminThemeScope from "@/components/admin/AdminThemeScope";
 import AdminTopbar from "@/components/admin/AdminTopbar";
@@ -51,6 +53,24 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <Suspense
+      fallback={
+        <main id="admin-main-content" tabIndex={-1} className="min-h-dvh bg-[#0d1117] p-4 text-[#c9d1d9] sm:p-6">
+          <AdminPageSkeleton variant="dashboard" />
+        </main>
+      }
+    >
+      <AuthorizedAdminLayout>{children}</AuthorizedAdminLayout>
+    </Suspense>
+  );
+}
+
+async function AuthorizedAdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   await connection();
 
   // Protect all /admin routes securely on the server
@@ -65,6 +85,7 @@ export default async function AdminLayout({
     <RealtimeProvider>
       <div data-bagui="operations-shell" data-admin-theme="dark" className="solar-ops flex h-screen w-full overflow-hidden bg-[#0d1117] text-[#c9d1d9]">
         <AdminThemeScope />
+        <AdminMobileNav currentUser={adminUser} />
         <div className="hidden h-full w-64 shrink-0 border-r border-[#30363d] bg-[#161b22] lg:block">
           <AdminSidebar currentUser={adminUser} />
         </div>
@@ -74,10 +95,11 @@ export default async function AdminLayout({
           className="custom-scrollbar relative flex h-full min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-[#0d1117]"
         >
           <AdminTopbar />
-          {children}
+          <main id="admin-main-content" tabIndex={-1} className="min-w-0 flex-1">
+            {children}
+          </main>
         </div>
 
-        <AdminMobileNav currentUser={adminUser} />
         <AdminCommandPaletteLoader />
       </div>
     </RealtimeProvider>

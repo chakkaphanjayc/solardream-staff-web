@@ -36,7 +36,16 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
   });
 
   const projects: ProjectItem[] = proposalRows.map((prop) => {
-    const config = (prop.configurationData as Record<string, unknown>) || {};
+    const config = prop.configurationData && typeof prop.configurationData === "object" && !Array.isArray(prop.configurationData)
+      ? prop.configurationData as Record<string, unknown>
+      : {};
+    const configText = (key: string) => {
+      const value = config[key];
+      return typeof value === "string" && value.trim() ? value.trim() : null;
+    };
+    const systemSizeKwp = typeof prop.systemSizeKwp === "number" && Number.isFinite(prop.systemSizeKwp) && prop.systemSizeKwp > 0
+      ? prop.systemSizeKwp
+      : null;
     const milestone: ProjectMilestone =
       prop.status === "COMPLETED" || prop.projectStatus === "COMPLETED"
         ? "COMPLETED"
@@ -46,11 +55,11 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
 
     return {
       id: prop.id,
-      customerName: String(config.clientName || prop.user?.name || prop.user?.fullName || "Solar Customer"),
-      phone: String(config.phone || prop.user?.phoneNumber || "0812345678"),
-      email: prop.user?.email || (config.email as string | null),
+      customerName: configText("clientName") || prop.user?.name?.trim() || prop.user?.fullName?.trim() || null,
+      phone: configText("phone") || prop.user?.phoneNumber?.trim() || null,
+      email: prop.user?.email?.trim() || configText("email"),
       lineUserId: prop.user?.lineUserId,
-      systemSizeKwp: prop.systemSizeKwp || 5.5,
+      systemSizeKwp,
       milestone,
       updatedAt: (prop.updatedAt || prop.createdAt).toISOString(),
     };

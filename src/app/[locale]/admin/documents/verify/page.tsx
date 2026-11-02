@@ -12,7 +12,7 @@ export default async function AdminDocumentVerificationPage() {
   await requireStaff();
 
   return (
-    <main className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
+    <div className="min-h-full bg-[#0d1117] px-4 py-6 text-[#c9d1d9] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         <header className="border-b border-[#30363d] pb-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#58a6ff]">Document Control</p>
@@ -26,6 +26,6 @@ export default async function AdminDocumentVerificationPage() {
           <DocumentVerificationDropzone />
         </section>
       </div>
-    </main>
+    </div>
   );
 }

@@ -72,7 +72,7 @@ export default function AdminMobileNav({ currentUser }: { currentUser: AdminSide
         type="button"
         onClick={() => setOpen(true)}
         ref={triggerRef}
-        className={cn(buttonVariants({ variant: "outline", size: "icon" }), "fixed left-4 top-3 z-40 size-9 min-h-9 rounded-md border-[#30363d] bg-[#161b22] text-[#c9d1d9] shadow-sm hover:bg-[#21262d] hover:text-[#f0f6fc] focus-visible:ring-[#58a6ff] lg:hidden")}
+        className={cn(buttonVariants({ variant: "outline", size: "icon" }), "fixed left-4 top-3 z-40 size-11 min-h-11 rounded-md border-[#30363d] bg-[#161b22] text-[#c9d1d9] shadow-sm hover:bg-[#21262d] hover:text-[#f0f6fc] focus-visible:ring-[#58a6ff] lg:hidden")}
         aria-label={t("openNavigation")}
         aria-expanded={open}
         aria-controls="admin-mobile-navigation"
@@ -86,7 +86,7 @@ export default function AdminMobileNav({ currentUser }: { currentUser: AdminSide
             type="button"
             className="absolute inset-0 bg-black/60"
             onClick={() => setOpen(false)}
-            aria-label="Close admin navigation"
+            aria-label={t("closeNavigation")}
           />
           <div
             id="admin-mobile-navigation"
@@ -94,13 +94,13 @@ export default function AdminMobileNav({ currentUser }: { currentUser: AdminSide
             className="relative h-full w-[min(19rem,calc(100vw-2.5rem))] border-r border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/40"
             role="dialog"
             aria-modal="true"
-            aria-label="Admin navigation"
+            aria-label={t("navigationDialog")}
           >
             <button
               type="button"
               onClick={() => setOpen(false)}
               ref={closeButtonRef}
-              className={cn(buttonVariants({ variant: "outline", size: "icon" }), "absolute right-3 top-3 z-10 size-9 min-h-9 rounded-md border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc] focus-visible:ring-[#58a6ff]")}
+              className={cn(buttonVariants({ variant: "outline", size: "icon" }), "absolute right-3 top-3 z-10 size-11 min-h-11 rounded-md border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc] focus-visible:ring-[#58a6ff]")}
               aria-label={t("closeNavigation")}
             >
               <X className="size-4" aria-hidden="true" />

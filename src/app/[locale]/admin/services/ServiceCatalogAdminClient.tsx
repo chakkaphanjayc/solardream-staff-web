@@ -287,7 +287,7 @@ export default function ServiceCatalogAdminClient({
     );
   };
   return (
-    <main className="min-h-full bg-[#0B1121] p-4 text-[#F8FAFC] sm:p-8">
+    <div className="min-h-full bg-[#0B1121] p-4 text-[#F8FAFC] sm:p-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -510,7 +510,7 @@ export default function ServiceCatalogAdminClient({
           </section>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 function Row({

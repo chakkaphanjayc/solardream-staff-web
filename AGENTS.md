@@ -52,7 +52,7 @@ When a new feature request is initiated, the agents must collaborate in this str
 
 # 3. Output Directives & Communication
 - Every agent must provide clean, production-ready, complete functional blocks.
-- Agents must wait for my user confirmation (`y`/approve) at the end of each phase before the next agent takes over the workflow.
+- Complete routine phases autonomously without waiting for confirmation. Report material risks after implementation and verification.
 
 ## UI Component Base (BagUI)
 - **Primary UI Base**: All UI components, sections, and blocks MUST use [BagUI](https://github.com/anelkabag/bag-ui) (`https://bagui.pro`) as the foundational base library and pattern reference.
@@ -79,3 +79,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Verification and Autonomous Loop
+
+- Canonical verification commands are `npm run typecheck`, `npm run lint`, and `npm run test`.
+- Run all three after each task. Fix task-owned failures and retry up to three times; if a task still fails, revert only its changes, record the failure in `REVIEW_INBOX.md`, and continue with independent work. Never use a broad `git checkout -- .` in a dirty worktree.
+- Commit only task-owned changes. Preserve pre-existing staged, unstaged, and untracked work.
+- Routine UI/accessibility improvements may be committed and logged in `STATE.md`. Auth/security, schema/migrations, payment/billing, public API contracts, or core architecture changes require a concise review card in `REVIEW_INBOX.md` after implementation and verification.

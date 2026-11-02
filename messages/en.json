@@ -4260,6 +4260,7 @@
     "searchConsole": "Search console…",
     "openNavigation": "Open admin navigation",
     "closeNavigation": "Close admin navigation",
+    "navigationDialog": "Admin navigation",
     "breadcrumbsLabels": {
       "admin": "Admin",
       "sales": "Sales",
@@ -4291,6 +4292,22 @@
       "connections": "Channel connections",
       "messages": "Inbox"
     }
+  },
+  "AdminSchedule": {
+    "dragHelp": "Drag a visit to another day, or choose a date on its card.",
+    "dateRangeHelp": "Choose up to 31 calendar days; each visit follows its local timezone.",
+    "scheduledVisits": "Scheduled visits",
+    "chooseDate": "Choose a date",
+    "chooseDateFor": "Choose a date for {customerName}, project {projectCode}, currently scheduled {scheduledAt}",
+    "targetDate": "New visit date",
+    "targetDateFor": "New visit date for {customerName}, project {projectCode}, currently scheduled {scheduledAt}",
+    "moveVisit": "Move visit",
+    "moveVisitFor": "Move visit for {customerName}, project {projectCode}, currently scheduled {scheduledAt}",
+    "inProgressCannotMove": "In-progress visits cannot be rescheduled.",
+    "invalidVisitDate": "That date and visit time does not exist in this visit's time zone. Choose another date.",
+    "visitMoved": "{customerName}'s visit for project {projectCode}, scheduled {scheduledAt}, was moved to {date}.",
+    "invalidDateRange": "Choose a valid date range of up to 31 calendar days.",
+    "refreshingSchedule": "Refreshing schedule"
   },
   "ProfileGeneralInfo": {
     "title": "General information",
@@ -4745,6 +4762,97 @@
     "cancel": "Cancel",
     "close": "Close revision request"
   },
+  "AdminProjects": {
+    "customerNameUnavailable": "Customer name unavailable",
+    "phoneUnavailable": "Phone not provided",
+    "valueUnavailable": "Not provided",
+    "queueUpdates": "Queue updates",
+    "queueMilestoneTitle": "Queue project update",
+    "closeQueueDialog": "Close project update dialog",
+    "queueMilestoneDescription": "Queue a customer update for {customer} ({systemSize}). This will not change the project status.",
+    "milestoneToNotify": "Milestone to include in the notification:",
+    "richMenuPending": "LINE menu update pending",
+    "notificationDetails": "Customer notification details (queued for delivery):",
+    "projectStatusUnchangedNote": "This request queues a notification. Project status changes only after an authoritative update.",
+    "customerNameRequiredForCompletion": "A customer name is required to queue a completion notification.",
+    "noProjectsToQueue": "Select projects with a next milestone to include in a notification.",
+    "completedProjectsNoNextMilestone": "Completed projects do not have a later milestone to queue.",
+    "bulkQueueRequestFailed": "Could not queue the selected notification requests. Please try again.",
+    "milestoneNotificationQueued": "Milestone notification queued. Project status remains unchanged until an authoritative update is available.",
+    "completionNotificationQueued": "Completion notification queued. Project status, LINE delivery, and warranty issuance are not confirmed.",
+    "completionNotificationQueuedMenuPending": "Completion notification queued. The LINE rich menu update is pending; delivery and warranty issuance are not confirmed.",
+    "bulkMilestoneNotificationQueued": "Notifications queued for {count} projects. Project statuses remain unchanged until updated.",
+    "bulkCompletionNotificationQueued": "Completion notifications queued for {count} projects. LINE delivery and warranty issuance are not confirmed; rich menu updates remain pending.",
+    "notificationQueueFailed": "The notification could not be queued.",
+    "notificationQueueConnectionFailed": "Could not connect to the notification service.",
+    "bulkNotificationQueueFailed": "{count} notification request(s) could not be queued."
+  },
+  "TechWorkOrder": {
+    "loadingWorkOrder": "Loading work order…",
+    "customerNameUnavailable": "Customer name unavailable",
+    "valueUnavailable": "Not provided",
+    "panelCount": "{count, plural, =1 {# panel} other {# panels}}",
+    "customerSummary": "Customer: {customerName}",
+    "customerSummaryWithSize": "Customer: {customerName} · {systemSize} solar system",
+    "statusOpen": "Open",
+    "statusScheduled": "Scheduled",
+    "statusInProgress": "In progress",
+    "statusHandoverPending": "Handover pending",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "navigateWithMaps": "Navigate with Google Maps",
+    "callCustomer": "Call customer",
+    "siteAddress": "Installation address",
+    "projectScope": "Project equipment",
+    "solarPanels": "Solar panels",
+    "inverter": "Inverter",
+    "checklistTitle": "Installation quality checklist",
+    "checklist": {
+      "roofMounting": "Inspect roof structure and panel mounts",
+      "inverterWiring": "Install DC/AC wiring and combiner box",
+      "safetyGrounding": "Check grounding and surge protection",
+      "commissioningTest": "Test grid connection and inverter operation",
+      "siteCleanliness": "Clean the site and store leftover equipment"
+    },
+    "photoRequired": "QC photo required",
+    "photoSectionTitle": "Quality photos",
+    "photoCategories": {
+      "roofMounting": "Roof mounting",
+      "inverterWiring": "Inverter wiring",
+      "combinerBox": "Combiner box",
+      "safetyGrounding": "Grounding and safety"
+    },
+    "viewPhotoInDrive": "View photo in Google Drive",
+    "uploading": "Uploading…",
+    "attachPhoto": "Take or attach photo",
+    "photoUploadFailed": "Photo upload failed.",
+    "photoUploaded": "{category} photo uploaded to Google Drive.",
+    "signatureRequired": "Ask the customer to sign before handing over the work.",
+    "handoverFailed": "Could not complete the handover.",
+    "handoverSucceeded": "Handover complete. The PDF certificate was created.",
+    "completeAndHandover": "Complete installation and hand over",
+    "handoverCompleted": "Installation handed over and certificate issued.",
+    "viewHandoverPdf": "View handover certificate (PDF)",
+    "handoverDialogTitle": "Customer handover signature",
+    "closeHandoverDialog": "Close handover dialog",
+    "handoverGreeting": "For {customerName}",
+    "handoverInstructionsWithSize": "Sign below to confirm the {systemSize} solar installation is complete and has passed safety testing.",
+    "handoverInstructions": "Sign below to confirm the solar installation is complete and has passed safety testing.",
+    "signaturePadLabel": "Customer signature",
+    "signatureKeyboardInstructions": "Draw with touch or mouse, or focus the signing area. Use arrow keys to move the pen, Space or Enter to start or pause a stroke, Shift + arrow for larger steps, and Escape to lift the pen. Press Tab to leave the signing area.",
+    "keyboardSignatureStarted": "Keyboard drawing started.",
+    "keyboardSignaturePaused": "Keyboard drawing paused.",
+    "keyboardPenMoved": "Pen moved {direction}; position {x} pixels from the left and {y} pixels from the top.",
+    "directionLeft": "left",
+    "directionRight": "right",
+    "directionUp": "up",
+    "directionDown": "down",
+    "signatureCleared": "Signature cleared.",
+    "clearSignature": "Clear signature",
+    "cancel": "Cancel",
+    "creatingHandoverPdf": "Creating handover PDF…",
+    "confirmHandover": "Confirm and create handover PDF"
+  },
   "InstallerWorkflow": {
     "noActiveStage": "No active stage found.",
     "photoUploaded": "Photo uploaded.",
@@ -5186,6 +5294,7 @@
     },
     "tabs": {
       "label": "Sales pipeline views",
+      "mobileHint": "Swipe to see more views",
       "leads": "Leads ({count})",
       "quotations": "Quotations ({count})",
       "threads": "Customer threads ({count})",
@@ -5258,6 +5367,115 @@
       },
       "emptyTitle": "No customer threads found",
       "emptyDescription": "Try a different search or clear the active filters."
+    },
+    "dialogs": {
+      "createManualRequestTitle": "Create Manual Request (Offline Lead)",
+      "closeCreateManualRequest": "Close create request dialog",
+      "leadRecordTitle": "Lead record for {customerName}",
+      "leadRecordFallback": "Lead record",
+      "closeLeadRecord": "Close lead record dialog",
+      "customerRecordTitle": "Customer record for {customerName}",
+      "customerRecordFallback": "Customer record",
+      "closeCustomerRecord": "Close customer record panel"
+    }
+  },
+  "OperationsWorkspace": {
+    "disabled": {
+      "title": "Operations workspace is staged",
+      "description": "Enable OPS_V2_PROJECTS in Feature toggles when the team is ready to expose the canonical project read model."
+    },
+    "header": {
+      "eyebrow": "Canonical delivery control",
+      "title": "Operations workspace",
+      "description": "One project view for site readiness, engineering, material availability, scheduling, field execution, handover, and warranty activation."
+    },
+    "overview": {
+      "label": "Project overview",
+      "visibleProjects": "Visible projects",
+      "activeDelivery": "Active delivery",
+      "needsPreparation": "Needs preparation",
+      "completed": "Completed"
+    },
+    "filters": {
+      "searchLabel": "Search projects",
+      "searchPlaceholder": "Search project, customer, or site",
+      "stateLabel": "Filter project state",
+      "allStates": "All lifecycle states"
+    },
+    "actions": {
+      "openFeatureToggles": "Open feature toggles",
+      "integrationMonitor": "Integration monitor",
+      "refresh": "Refresh",
+      "openProject": "Open {projectCode}"
+    },
+    "table": {
+      "project": "Project",
+      "customerSite": "Customer / site",
+      "lifecycle": "Lifecycle",
+      "erpProjection": "ERP projection",
+      "updated": "Updated",
+      "open": "Open"
+    },
+    "empty": {
+      "loadingProjects": "Loading projects…",
+      "noMatches": "No canonical projects match these filters.",
+      "siteDetailsPending": "Site details pending"
+    },
+    "errors": {
+      "loadFailed": "Projects could not be loaded."
+    },
+    "states": {
+      "new": "New",
+      "siteReview": "Site review",
+      "engineering": "Engineering",
+      "materialPreparation": "Material preparation",
+      "readyToSchedule": "Ready to schedule",
+      "scheduled": "Scheduled",
+      "inProgress": "In progress",
+      "qaCommissioning": "QA & commissioning",
+      "handover": "Handover",
+      "warrantyActivation": "Warranty activation",
+      "completed": "Completed"
+    },
+    "syncStatuses": {
+      "synced": "Synced",
+      "syncing": "Syncing",
+      "pending": "Pending",
+      "failed": "Failed",
+      "localOnly": "Local record only"
+    }
+  },
+  "ProjectWorkspaceControls": {
+    "erpItemCode": "ERPNext item code",
+    "check": "Check",
+    "visitStart": "Visit start",
+    "visitEnd": "Visit end",
+    "confirmVisit": "Confirm field visit",
+    "materialStatus": "Material status",
+    "materialName": "Material or item name",
+    "materialQuantity": "Quantity",
+    "addMaterial": "Add",
+    "scanSerial": "Serial number to scan or verify",
+    "verify": "Verify",
+    "resolveItemCode": "ERPNext item code to match",
+    "resolve": "Resolve",
+    "assetProductName": "Product name",
+    "assetSerialNumber": "Serial number",
+    "warrantyProvider": "Warranty provider (optional)",
+    "registerAsset": "Register",
+    "assignmentVisit": "Visit",
+    "assignmentTask": "Task (optional)",
+    "assignmentTechnician": "Technician",
+    "chooseVisit": "Choose visit",
+    "visitLevelAssignment": "Visit-level assignment",
+    "chooseTechnician": "Choose technician",
+    "assignFieldWork": "Assign field work",
+    "statusLabels": {
+      "RESERVED": "RESERVED",
+      "PICKED": "PICKED",
+      "ISSUED": "ISSUED",
+      "SHORT": "SHORT",
+      "CANCELLED": "CANCELLED"
     }
   },
   "InboundRequests": {

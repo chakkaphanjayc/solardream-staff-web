@@ -337,7 +337,7 @@ export default function RegisterForm({
           </div>
         </fieldset>
 
-        <Button type="submit" size="lg" disabled={loading} className="min-h-12 w-full rounded-full bg-[#B7D1EA] text-white hover:bg-[#A5C2DE] active:scale-95 shadow-md font-bold">
+        <Button type="submit" size="lg" disabled={loading} className="min-h-12 w-full rounded-full bg-[#B7D1EA] text-[#0F172A] hover:bg-[#A5C2DE] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] active:scale-95 shadow-md font-bold">
           {loading ? <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" /> : null}
           {t("createAccount")}
         </Button>
@@ -347,7 +347,7 @@ export default function RegisterForm({
         {t("alreadyHaveAccount")}{" "}
         <Link
           href={loginHref}
-          className="inline-flex min-h-11 items-center rounded-lg px-1 font-bold text-[#4F7FA8] underline-offset-4 hover:underline hover:text-[#2E2C27] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex min-h-11 items-center rounded-lg px-1 font-bold text-[#475569] underline-offset-4 hover:underline hover:text-[#2E2C27] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {t("signInInstead")}
         </Link>
@@ -383,7 +383,7 @@ function ConsentCheckbox({
         className={cn(
           "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-ring",
           checked
-            ? "border-[#7CA8D0] bg-[#B7D1EA] text-white"
+            ? "border-[#7CA8D0] bg-[#B7D1EA] text-[#0F172A]"
             : "border-slate-400 bg-white text-transparent",
         )}
         aria-hidden="true"

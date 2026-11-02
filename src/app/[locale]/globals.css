@@ -3605,18 +3605,7 @@ body.solar-ops-portal .organic-paper-grain,
 
 .solar-auth-panel {
   overflow: hidden;
-  background: rgba(240, 238, 233, 0.6);
-}
-
-.solar-auth-halftone {
-  background-image: radial-gradient(
-    circle,
-    rgba(44, 44, 36, 0.12) 0 0.7px,
-    transparent 0.9px
-  );
-  background-size: 12px 12px;
-  mask-image: linear-gradient(135deg, #000, transparent 56%);
-  opacity: 0.08;
+  background: #f0eee9;
 }
 
 .solar-auth-header {
@@ -3673,7 +3662,7 @@ body.solar-ops-portal .organic-paper-grain,
 
 .solar-auth-form-card {
   border: 1px solid rgba(222, 216, 207, 0.65);
-  border-radius: 2rem;
+  border-radius: 1.5rem;
   background: rgba(254, 254, 250, 0.95);
   box-shadow:
     0 4px 20px -2px rgba(44, 44, 36, 0.06),
@@ -3755,15 +3744,9 @@ body.solar-ops-portal .organic-paper-grain,
 }
 
 .solar-auth-art-frame {
-  border: 4px solid #F7F6F3;
-  border-radius: 2.5rem !important;
-  box-shadow: 0 10px 40px -10px rgba(193, 140, 93, 0.25);
-  transform: rotate(-1.5deg);
-  transition: transform 500ms ease;
-}
-
-.solar-auth-art-frame:hover {
-  transform: rotate(0deg);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 1.5rem !important;
+  box-shadow: 0 8px 8px rgb(15 23 42 / 0.14);
 }
 
 .solar-auth-art-copy h2 {
@@ -3831,10 +3814,6 @@ body.solar-ops-portal .organic-paper-grain,
 
 .solar-auth-art {
   padding: 0;
-}
-
-.solar-auth-art-frame {
-  box-shadow: 0 8px 8px rgb(15 23 42 / 0.14);
 }
 
 .solar-auth-art-overlay {
@@ -9021,4 +9000,17 @@ html body[data-solar-ui="customer"]
   border-color: #7ca8d0 !important;
   background: #b7d1ea !important;
   color: #142533 !important;
+}
+
+/* Keep Staff authentication states readable after the shared auth cascade. */
+html body[data-solar-ui="staff"] .solar-auth-primary,
+html body[data-solar-ui="staff"] .solar-auth-primary:is(:hover, :focus-visible),
+html body[data-solar-ui="staff"] .solar-auth-mode-switch .sd-action:is(:hover, :focus-visible) {
+  color: #0f172a !important;
+}
+
+html body[data-solar-ui="staff"]
+  :is(.solar-auth-input, .solar-auth-primary, .solar-auth-secondary, .solar-auth-mode-switch .sd-action):focus-visible {
+  outline: 3px solid #0f172a !important;
+  outline-offset: 2px !important;
 }

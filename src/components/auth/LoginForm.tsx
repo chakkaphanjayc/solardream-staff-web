@@ -73,9 +73,9 @@ type AuthFormValues = {
 };
 
 const inputClassName =
-  "solar-auth-input min-h-12 w-full rounded-t-xl rounded-b-none border-0 border-b-2 border-[#8E8B83] bg-[#F7F6F3] pl-11 pr-4 text-base font-medium text-[#2E2C27] transition-all focus:border-[#7CA8D0] focus:bg-[#F0EEE9] outline-none disabled:bg-slate-100 placeholder:text-[#8E8B83] placeholder:font-normal";
+  "solar-auth-input min-h-12 w-full rounded-t-xl rounded-b-none border-0 border-b-2 border-[#8E8B83] bg-[#F7F6F3] pl-11 pr-4 text-base font-medium text-[#2E2C27] transition-all focus:border-[#7CA8D0] focus:bg-[#F0EEE9] outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] disabled:bg-slate-100 placeholder:text-[#8E8B83] placeholder:font-normal";
 const primaryButtonClassName =
-  "solar-auth-primary min-h-13 w-full rounded-full bg-[#B7D1EA] hover:bg-[#A5C2DE] text-white px-5 text-base font-bold tracking-tight transition-all disabled:opacity-70 active:scale-95 shadow-md";
+  "solar-auth-primary min-h-13 w-full rounded-full bg-[#B7D1EA] hover:bg-[#A5C2DE] text-[#0F172A] px-5 text-base font-bold tracking-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F0EEE9] disabled:opacity-70 active:scale-95 shadow-md";
 const secondaryButtonClassName =
   "solar-auth-secondary min-h-13 w-full rounded-full border border-[#CBC7BE] bg-[#F0EEE9] hover:bg-[#DCE8F5] text-[#2E2C27] px-5 text-sm font-bold transition-all disabled:opacity-70 active:scale-95 shadow-sm";
 
@@ -851,7 +851,7 @@ export default function LoginForm({
           {isRegister && claimPrefill?.email ? (
             <p
               id={`${emailId}-claimed-note`}
-              className="text-xs font-semibold text-[#4F7FA8]"
+              className="text-xs font-semibold text-[#475569]"
             >
               {claimT("lockedEmail")}
             </p>
@@ -928,7 +928,7 @@ export default function LoginForm({
             {!isRegister ? (
               <Link
                 href={forgotPasswordHref}
-                className="inline-flex min-h-11 items-center rounded-lg px-1 text-xs font-semibold text-[#4F7FA8] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center rounded-lg px-1 text-xs font-semibold text-[#475569] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {authT("forgotPassword")}
               </Link>
@@ -1250,7 +1250,7 @@ export default function LoginForm({
           type="button"
           variant="link"
           onClick={() => switchMode(isRegister ? "login" : "register")}
-          className="ml-1 min-h-11 px-1 font-bold text-[#4F7FA8] underline decoration-2 underline-offset-4 hover:text-[#2E2C27]"
+          className="ml-1 min-h-11 px-1 font-bold text-[#475569] underline decoration-2 underline-offset-4 hover:text-[#2E2C27]"
         >
           {isRegister ? authT("signInLink") : authT("signUpForFree")}
         </Button>
